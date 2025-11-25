@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guard Demo - Urvoic</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="toastContainer" class="toast-container"></div>
+    <div class="site">
+        <header class="site-header">
+            <div class="header-inner">
+                <a href="/" class="brand">
+                    <img src="https://i.ibb.co/gMrgR5tG/1763226137808-modified.png" alt="Urvoic Logo" class="brand-image" />
+                    <span class="brand-name">Urvoic</span>
+                </a>
+                <div class="header-actions">
+                    <button class="icon-btn" onclick="history.back()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <main style="padding: 20px; max-width: 980px; margin: 0 auto;">
+            <h1 style="color: var(--dark); margin-bottom: 20px;">Guard Dashboard Demo</h1>
+            <div style="background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                <h3 style="color: var(--brand);">Welcome to Urvoic - Guard View</h3>
+                <p>As a guard, you can:</p>
+                <ul style="line-height: 1.8;">
+                    <li>Log visitor entry and exit</li>
+                    <li>Manage shift timings</li>
+                    <li>Submit shift reports</li>
+                    <li>Check pre-approved visitors</li>
+                    <li>Monitor gate status</li>
+                    <li>Record incidents and complaints</li>
+                    <li>View maintenance visitor logs</li>
+                    <li>Get duty notifications</li>
+                </ul>
+            </div>
+            <button onclick="history.back()" style="padding: 12px 24px; background: var(--brand); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Back to Home</button>
+        </main>
+    </div>
+</body>
+</html>
