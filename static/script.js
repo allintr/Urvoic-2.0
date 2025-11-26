@@ -666,7 +666,7 @@ function showSocietyDropdown(input, societies) {
     societies.forEach(society => {
       const item = document.createElement('div');
       item.style.cssText = 'padding:10px;border-bottom:1px solid #eee;cursor:pointer;';
-      item.textContent = society.name;
+      item.innerHTML = `<div style="font-weight:600;">${society.name}</div><div style="font-size:12px;color:#888;">${society.address || 'Address not available'}</div>`;
       item.onclick = () => {
         input.value = society.name;
         dropdown.style.display = 'none';
