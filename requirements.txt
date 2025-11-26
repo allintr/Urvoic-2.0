@@ -9,3 +9,14 @@ python-dotenv
 qrcode
 werkzeug
 gunicorn
+Flask
+Flask-Cors
+Flask-Login
+Flask-SQLAlchemy
+gunicorn
+Pillow
+psycopg2-binary
+python-dotenv
+qrcode
+SQLAlchemy
+werkzeug
