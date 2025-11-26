@@ -245,20 +245,11 @@ async function handleResidentSignup(event) {
   const email = inputs[1].value;
   const phone = inputs[2].value;
   const password = inputs[3].value;
-  const confirmPassword = inputs[4].value;
-  const societyName = inputs[5].value;
-  const flatNumber = inputs[6]?.value || '';
+  const societyName = inputs[4].value;
+  const flatNumber = inputs[5]?.value || '';
   
   const roleBtn = form.querySelector('.role-toggle .role-btn.active');
   const role = roleBtn ? roleBtn.textContent.toLowerCase() : 'resident';
-  
-  if (password !== confirmPassword) {
-    showToast('Passwords do not match', 'error');
-    btn.classList.remove('loading');
-    btn.innerText = originalText;
-    btn.disabled = false;
-    return;
-  }
   
   try {
     const response = await fetch('/api/signup', {
@@ -304,17 +295,8 @@ async function handleBusinessSignup(event) {
   const email = inputs[2].value;
   const phone = inputs[3].value;
   const password = inputs[4].value;
-  const confirmPassword = inputs[5].value;
-  const societyName = inputs[6].value;
-  const businessCategory = inputs[7].value;
-  
-  if (password !== confirmPassword) {
-    showToast('Passwords do not match', 'error');
-    btn.classList.remove('loading');
-    btn.innerText = originalText;
-    btn.disabled = false;
-    return;
-  }
+  const societyName = inputs[5].value;
+  const businessCategory = inputs[6].value;
   
   try {
     const response = await fetch('/api/signup', {
@@ -363,15 +345,6 @@ async function handleSocietyRegister(event) {
   const adminEmail = inputs[4].value;
   const adminPhone = inputs[5].value;
   const password = inputs[6].value;
-  const confirmPassword = inputs[7].value;
-  
-  if (password !== confirmPassword) {
-    showToast('Passwords do not match', 'error');
-    btn.classList.remove('loading');
-    btn.innerText = originalText;
-    btn.disabled = false;
-    return;
-  }
   
   try {
     const response = await fetch('/api/register-society', {
