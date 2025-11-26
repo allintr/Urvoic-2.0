@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 from dotenv import load_dotenv
 from datetime import timedelta, datetime
@@ -37,6 +38,11 @@ else:
     DATABASE_URL = 'sqlite:///urvoic.db'
 
 app = Flask(__name__)
+
+app.wsgi_app = ProxyFix(
+    app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
+)
+
 app.config['SECRET_KEY'] = os.environ.get(
     'SECRET_KEY', 'urvoic-secret-key-change-in-production')
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
