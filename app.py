@@ -260,7 +260,7 @@ with app.app_context():
 
 @app.route('/')
 def index():
-    return send_file('index.html')
+    return render_template('index.html')
 
 
 @app.route('/api/signup', methods=['POST'])
