@@ -536,8 +536,22 @@ function initProfileEdit() {
 }
 
 
+// --- LOGOUT ---
+function initLogout() {
+    const logoutBtn = document.querySelector('.btn-logout');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            fetch('/api/logout', {method: 'POST'})
+            .then(() => { window.location.href = '/'; })
+            .catch(err => showToast('Logout failed', 'error'));
+        });
+    }
+}
+
 // --- SIDEBAR & NOTIFICATION SCRIPT ---
 document.addEventListener('DOMContentLoaded', function() {
+    initLogout();
     const hamburgerBtn = document.getElementById('hamburger-btn');
     const sidebar = document.getElementById('sidebar-nav');
     const sidebarOverlay = document.getElementById('sidebar-overlay');

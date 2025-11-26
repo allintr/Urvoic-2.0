@@ -10,7 +10,20 @@ document.addEventListener('DOMContentLoaded', () => {
     initProfileEdit();
     initVisitorLogPage();
     initVisitorPageTabs(); // NEW: Specific tab logic for visitor page
+    initLogout();
 });
+
+function initLogout() {
+    const logoutBtn = document.querySelector('.btn-logout');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            fetch('/api/logout', {method: 'POST'})
+            .then(() => { window.location.href = '/'; })
+            .catch(err => showToast('Logout failed', 'error'));
+        });
+    }
+}
 
 
 // --- Toast Notification Function ---

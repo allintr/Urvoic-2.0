@@ -14,7 +14,20 @@ document.addEventListener('DOMContentLoaded', () => {
     initMaintVisitorsPage(); // This is the updated function
     initShiftReportPage();
     initResidentsPage();
+    initLogout();
 });
+
+function initLogout() {
+    const logoutBtn = document.querySelector('.btn-logout');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            fetch('/api/logout', {method: 'POST'})
+            .then(() => { window.location.href = '/'; })
+            .catch(err => showToast('Logout failed', 'error'));
+        });
+    }
+}
 
 
 // --- Toast Notification Function ---
