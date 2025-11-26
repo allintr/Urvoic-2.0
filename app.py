@@ -2137,34 +2137,24 @@ def business_dashboard():
     return render_template('business_dashboard.html', user=current_user)
 
 
-@app.route('/script.js')
-def serve_script():
-    return send_file('script.js', mimetype='application/javascript')
-
-
-@app.route('/style.css')
-def serve_style():
-    return send_file('style.css', mimetype='text/css')
-
-
 @app.route('/demo/resident')
 def demo_resident():
-    return send_file('demo_resident.html')
+    return render_template('demo_resident.html')
 
 
 @app.route('/demo/admin')
 def demo_admin():
-    return send_file('demo_admin.html')
+    return render_template('demo_admin.html')
 
 
 @app.route('/demo/guard')
 def demo_guard():
-    return send_file('demo_guard.html')
+    return render_template('demo_guard.html')
 
 
 @app.route('/demo/business')
 def demo_business():
-    return send_file('demo_business.html')
+    return render_template('demo_business.html')
 
 
 @app.route('/api/societies', methods=['GET'])
