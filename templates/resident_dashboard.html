@@ -44,35 +44,11 @@
         </button>
     </div>
     <div class="notification-panel-body">
-        <ul class="notification-list">
-            <li class="notification-item unread" onclick="showMaintenancePage()">
-                <div class="history-icon icon-meeting">
-                    <i data-lucide="wrench" style="width: 18px; height: 18px;"></i>
-                </div>
-                <div class="notification-item-content">
-                    <div class="notification-item-title">New Maintenance Request</div>
-                    <div class="notification-item-time">5m ago</div>
-                </div>
-            </li>
-            <li class="notification-item" onclick="showReviewPage()">
-                <div class="history-icon icon-event">
-                    <i data-lucide="star" style="width: 18px; height: 18px;"></i>
-                </div>
-                <div class="notification-item-content">
-                    <div class="notification-item-title">You received a 5-star review!</div>
-                    <div class="notification-item-time">2h ago</div>
-                </div>
-            </li>
-             <li class="notification-item" onclick="showVisitorLogPage()">
-                <div class="history-icon icon-info">
-                    <i data-lucide="door-open" style="width: 18px; height: 18px;"></i>
-                </div>
-                <div class="notification-item-content">
-                    <div class="notification-item-title">Visitor 'Anjali Verma' was approved.</div>
-                    <div class="notification-item-time">Yesterday</div>
-                </div>
-            </li>
+        <ul class="notification-list" id="resident-notification-list">
         </ul>
+        <div style="padding: 20px; text-align: center; color: #999;">
+            <p>No notifications yet</p>
+        </div>
     </div>
     <div class="notification-panel-footer">
         <button class="btn-primary" style="width: 100%;" onclick="showToast('Loading all notifications...', 'success')">View All Notifications</button>

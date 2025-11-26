@@ -47,15 +47,11 @@
         </button>
     </div>
     <div class="notification-panel-body">
-        <ul class="notification-list">
-            <li class="notification-item unread" onclick="showMaintenancePage('pending')">
-                <div class="history-icon" style="background-color: var(--pending-red-light); color: var(--pending-red);"><i data-lucide="wrench"></i></div>
-                <div class="notification-item-content">
-                    <div class="notification-item-title">New Maintenance Request</div>
-                    <div class="notification-item-time">5m ago</div>
-                </div>
-            </li>
+        <ul class="notification-list" id="admin-notification-list">
         </ul>
+        <div style="padding: 20px; text-align: center; color: #999;">
+            <p>No notifications yet</p>
+        </div>
     </div>
 </aside>
 

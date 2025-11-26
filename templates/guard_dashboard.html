@@ -49,22 +49,11 @@
         </button>
     </div>
     <div class="notification-panel-body">
-        <ul class="notification-list">
-            <li class="notification-item unread" onclick="showVisitorLogPage()">
-                <div class="history-icon" style="background-color: var(--blue-bg); color: var(--blue);"><i data-lucide="user-plus"></i></div>
-                <div class="notification-item-content">
-                    <div class="notification-item-title">Visitor 'Anjali' Pre-Approved</div>
-                    <div class="notification-item-time">5m ago</div>
-                </div>
-            </li>
-            <li class="notification-item" onclick="showVisitorLogPage()">
-                <div class="history-icon" style="background-color: var(--green-bg); color: var(--brand);"><i data-lucide="truck"></i></div>
-                <div class="notification-item-content">
-                    <div class="notification-item-title">Delivery 'Zomato' at gate</div>
-                    <div class="notification-item-time">10m ago</div>
-                </div>
-            </li>
+        <ul class="notification-list" id="guard-notification-list">
         </ul>
+        <div style="padding: 20px; text-align: center; color: #999;">
+            <p>No notifications yet</p>
+        </div>
     </div>
 </aside>
 <div class="site">
