@@ -262,8 +262,18 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+class PasswordResetToken(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    token = db.Column(db.String(100), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    used = db.Column(db.Boolean, default=False)
+
 with app.app_context():
     db.create_all()
+
+from google_auth import google_auth
+app.register_blueprint(google_auth)
 
 
 @app.route('/')
@@ -353,6 +363,75 @@ def login():
 def logout():
     logout_user()
     return jsonify({'success': True, 'message': 'Logged out successfully'})
+
+
+@app.route('/api/forgot-password', methods=['POST'])
+def forgot_password():
+    import secrets
+    data = request.get_json()
+    email = data.get('email')
+    
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({
+            'success': True,
+            'message': 'If an account exists with this email, a reset link has been sent.'
+        })
+    
+    token = secrets.token_urlsafe(32)
+    reset_token = PasswordResetToken(user_id=user.id, token=token)
+    db.session.add(reset_token)
+    db.session.commit()
+    
+    reset_link = f"To reset your password, use this token: {token}"
+    
+    return jsonify({
+        'success': True,
+        'message': 'If an account exists with this email, a reset link has been sent.',
+        'debug_token': token
+    })
+
+
+@app.route('/api/reset-password', methods=['POST'])
+def reset_password():
+    data = request.get_json()
+    token = data.get('token')
+    new_password = data.get('new_password')
+    
+    if not token or not new_password:
+        return jsonify({
+            'success': False,
+            'message': 'Token and new password are required'
+        }), 400
+    
+    reset_token = PasswordResetToken.query.filter_by(token=token, used=False).first()
+    if not reset_token:
+        return jsonify({
+            'success': False,
+            'message': 'Invalid or expired reset token'
+        }), 400
+    
+    if (datetime.utcnow() - reset_token.created_at).total_seconds() > 3600:
+        return jsonify({
+            'success': False,
+            'message': 'Reset token has expired'
+        }), 400
+    
+    user = User.query.get(reset_token.user_id)
+    if not user:
+        return jsonify({
+            'success': False,
+            'message': 'User not found'
+        }), 404
+    
+    user.set_password(new_password)
+    reset_token.used = True
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': 'Password reset successfully. You can now log in with your new password.'
+    })
 
 
 @app.route('/api/register-society', methods=['POST'])

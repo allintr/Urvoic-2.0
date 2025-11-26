@@ -546,9 +546,100 @@ function visitDemo(type) {
 
 // --- Forgot Password ---
 function showForgotPasswordModal() {
-  const email = prompt('Enter your email address to receive password reset link:');
-  if (email) {
-    showToast('If this email exists in our system, a password reset link has been sent to ' + email, 'success');
+  const modal = document.createElement('div');
+  modal.className = 'forgot-password-modal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+  modal.innerHTML = `
+    <div style="background:white;border-radius:12px;padding:30px;max-width:400px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+      <h2 style="margin:0 0 10px 0;color:var(--dark);">Reset Password</h2>
+      <p style="margin:0 0 20px 0;color:var(--muted);font-size:14px;">Enter your email address and we'll send you instructions to reset your password.</p>
+      <div id="forgotStep1">
+        <input type="email" id="forgotEmail" class="form-input" placeholder="Enter your email" style="width:100%;margin-bottom:15px;">
+        <button onclick="requestPasswordReset()" style="width:100%;padding:12px;background:var(--brand);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;">Send Reset Link</button>
+      </div>
+      <div id="forgotStep2" style="display:none;">
+        <input type="text" id="resetToken" class="form-input" placeholder="Enter reset token" style="width:100%;margin-bottom:10px;">
+        <input type="password" id="newPassword" class="form-input" placeholder="New password" style="width:100%;margin-bottom:10px;">
+        <input type="password" id="confirmNewPassword" class="form-input" placeholder="Confirm new password" style="width:100%;margin-bottom:15px;">
+        <button onclick="resetPassword()" style="width:100%;padding:12px;background:var(--brand);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;">Reset Password</button>
+      </div>
+      <button onclick="closeForgotPasswordModal()" style="width:100%;padding:12px;background:#eee;color:#333;border:none;border-radius:8px;cursor:pointer;font-weight:600;margin-top:10px;">Cancel</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+function closeForgotPasswordModal() {
+  const modal = document.querySelector('.forgot-password-modal');
+  if (modal) modal.remove();
+}
+
+async function requestPasswordReset() {
+  const email = document.getElementById('forgotEmail').value;
+  if (!email) {
+    showToast('Please enter your email address', 'error');
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await response.json();
+    
+    if (data.success) {
+      showToast(data.message, 'success');
+      document.getElementById('forgotStep1').style.display = 'none';
+      document.getElementById('forgotStep2').style.display = 'block';
+      if (data.debug_token) {
+        document.getElementById('resetToken').value = data.debug_token;
+      }
+    } else {
+      showToast(data.message || 'Failed to send reset email', 'error');
+    }
+  } catch (error) {
+    showToast('An error occurred. Please try again.', 'error');
+  }
+}
+
+async function resetPassword() {
+  const token = document.getElementById('resetToken').value;
+  const newPassword = document.getElementById('newPassword').value;
+  const confirmPassword = document.getElementById('confirmNewPassword').value;
+  
+  if (!token || !newPassword || !confirmPassword) {
+    showToast('Please fill in all fields', 'error');
+    return;
+  }
+  
+  if (newPassword !== confirmPassword) {
+    showToast('Passwords do not match', 'error');
+    return;
+  }
+  
+  if (newPassword.length < 6) {
+    showToast('Password must be at least 6 characters', 'error');
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, new_password: newPassword })
+    });
+    const data = await response.json();
+    
+    if (data.success) {
+      showToast(data.message, 'success');
+      closeForgotPasswordModal();
+    } else {
+      showToast(data.message || 'Failed to reset password', 'error');
+    }
+  } catch (error) {
+    showToast('An error occurred. Please try again.', 'error');
   }
 }
 

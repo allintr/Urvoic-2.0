@@ -20,3 +20,5 @@ python-dotenv
 qrcode
 SQLAlchemy
 werkzeug
+oauthlib
+requests
