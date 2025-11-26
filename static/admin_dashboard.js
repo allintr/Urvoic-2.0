@@ -491,3 +491,20 @@ function navigateToInfo(pageKey) {
         window.scrollTo(0, 0);
     }
 }
+// Load real dashboard stats from database
+function loadDashboardStats() {
+    fetch('/api/admin/stats')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('resident-count').textContent = data.residents;
+                document.getElementById('pending-requests').textContent = data.pending_requests;
+                document.getElementById('visitors-count').textContent = data.visitors_today;
+                document.getElementById('dues-collected').textContent = '₹' + data.dues_collected.toLocaleString('en-IN');
+            }
+        })
+        .catch(err => console.log('Stats loaded with defaults'));
+}
+
+// Load stats on page load
+window.addEventListener('load', loadDashboardStats);

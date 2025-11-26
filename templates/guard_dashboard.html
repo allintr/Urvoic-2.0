@@ -18,9 +18,9 @@
 
 <nav class="sidebar-nav" id="sidebar-nav">
     <div class="sidebar-profile">
-        <div class="profile-pic-placeholder" style="background-color: var(--blue);">S</div>
-        <h4 class="profile-name">Shyam</h4>
-        <p class="profile-flat">Guard (Gate A)</p>
+        <div class="profile-pic-placeholder" style="background-color: var(--blue);">{{ user.full_name[0].upper() }}</div>
+        <h4 class="profile-name">{{ user.full_name }}</h4>
+        <p class="profile-flat">Guard</p>
         <a onclick="showMyProfilePage()" class="btn-sidebar btn-view-profile">View Profile</a>
     </div>
     <div class="sidebar-links">
@@ -89,8 +89,8 @@
   <div id="guard-dashboard-view" class="view-section active-view">
       <main class="hero">
         <div class="hero-inner">
-          <h1 class="hero-title">Upavan Apartment</h1>
-          <p class="hero-sub">Welcome back Shyam!</p> 
+          <h1 class="hero-title">{{ user.society_name }}</h1>
+          <p class="hero-sub">Welcome back {{ user.full_name }}!</p> 
           <div class="search-row">
             <input id="heroSearchInput" class="search-input" placeholder="Search Visitors, Residents, Reports..." aria-label="Search" />
             <button class="search-btn" aria-label="search-button" onclick="handleSearch()">

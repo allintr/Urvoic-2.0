@@ -2264,3 +2264,33 @@ def search_societies():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
+
+@app.route('/api/admin/stats', methods=['GET'])
+@login_required
+def get_admin_stats():
+    if current_user.role != 'admin':
+        return jsonify({'success': False}), 403
+    
+    society_name = current_user.society_name
+    
+    resident_count = User.query.filter_by(society_name=society_name, role='resident').count()
+    pending_requests = MaintenanceRequest.query.filter_by(society_name=society_name, status='pending').count()
+    
+    today = datetime.utcnow().date()
+    visitors_today = VisitorLog.query.filter(
+        VisitorLog.society_name == society_name,
+        db.func.date(VisitorLog.check_in_time) == today
+    ).count() if 'VisitorLog' in globals() else 0
+    
+    dues = Payment.query.filter_by(society_name=society_name, status='pending').with_entities(
+        db.func.sum(Payment.amount)
+    ).scalar() or 0
+    
+    return jsonify({
+        'success': True,
+        'residents': resident_count,
+        'pending_requests': pending_requests,
+        'visitors_today': visitors_today,
+        'dues_collected': int(dues)
+    })
