@@ -316,6 +316,7 @@ def signup():
             db.session.add(business_society)
         db.session.commit()
 
+    session.permanent = True
     login_user(user, remember=True)
 
     return jsonify({
@@ -343,6 +344,7 @@ def login():
             'message': 'Invalid email or password'
         }), 401
 
+    session.permanent = True
     login_user(user, remember=True)
 
     return jsonify({
@@ -467,6 +469,7 @@ def register_society():
     db.session.add(society)
     db.session.commit()
 
+    session.permanent = True
     login_user(admin, remember=True)
 
     return jsonify({
