@@ -597,7 +597,7 @@ function showSocietyDropdown(input, societies) {
   
   dropdown.innerHTML = '';
   if (societies.length === 0) {
-    dropdown.innerHTML = '<div style="padding:10px;color:#999;text-align:center;">Can't find your society? <a onclick="navigateToLogin('register', 'resident')" style="color:var(--brand);cursor:pointer;font-weight:600;">Register it now!</a></div>';
+    dropdown.innerHTML = `<div style="padding:10px;color:#999;text-align:center;">Can't find your society? <a onclick="navigateToLogin('register', 'resident')" style="color:var(--brand);cursor:pointer;font-weight:600;">Register it now!</a></div>`;
   } else {
     societies.forEach(society => {
       const item = document.createElement('div');
