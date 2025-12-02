@@ -3,7 +3,7 @@ modules = ["web", "python-3.11"]
 
 [nix]
 channel = "stable-24_11"
-packages = ["static-web-server", "unzip"]
+packages = ["freetype", "iana-etc", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "static-web-server", "tcl", "tk", "unzip", "zlib"]
 
 [deployment]
 publicDir = "/"
