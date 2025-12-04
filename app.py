@@ -345,6 +345,14 @@ class Earnings(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+class MaintenanceUpvote(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    request_id = db.Column(db.Integer, db.ForeignKey('maintenance_request.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    __table_args__ = (db.UniqueConstraint('user_id', 'request_id', name='unique_user_request_upvote'),)
+
+
 with app.app_context():
     db.create_all()
 
@@ -723,7 +731,9 @@ def create_maintenance_request():
         society_name=current_user.society_name,
         flat_number=current_user.flat_number,
         created_by_id=current_user.id,
-        status='pending'
+        status='pending',
+        current_status='Open',
+        is_public=data.get('is_public', False)
     )
 
     db.session.add(request_obj)
@@ -956,10 +966,19 @@ def update_request_status(request_id):
         return jsonify({'success': False, 'message': 'Request not found'}), 404
     
     data = request.get_json()
-    maintenance_request.status = data.get('status', maintenance_request.status)
+    new_status = data.get('status', maintenance_request.status)
+    maintenance_request.status = new_status
+    maintenance_request.current_status = new_status
     db.session.commit()
     
     log_activity('Request Status Updated', f"Changed status of '{maintenance_request.title}' to {maintenance_request.status}", current_user)
+    
+    socketio.emit('request_status_update', {
+        'request_id': maintenance_request.id,
+        'title': maintenance_request.title,
+        'status': maintenance_request.status,
+        'current_status': maintenance_request.current_status
+    }, room=f"society_{current_user.society_name}")
     
     return jsonify({'success': True, 'message': 'Status updated successfully'})
 
@@ -1284,10 +1303,14 @@ def get_messages():
 @login_required
 def get_activity_logs():
     limit = request.args.get('limit', 20, type=int)
+    context = request.args.get('context')
     
-    logs = ActivityLog.query.filter_by(
-        society_name=current_user.society_name
-    ).order_by(ActivityLog.created_at.desc()).limit(limit).all()
+    query = ActivityLog.query.filter_by(society_name=current_user.society_name)
+    
+    if context:
+        query = query.filter(ActivityLog.action.ilike(f'%{context}%'))
+    
+    logs = query.order_by(ActivityLog.created_at.desc()).limit(limit).all()
     
     activities = [{
         'id': log.id,
@@ -1327,6 +1350,13 @@ def create_announcement():
     db.session.commit()
     
     log_activity('Published Announcement', f"{current_user.full_name} published '{data['title']}'", current_user)
+    
+    socketio.emit('new_announcement', {
+        'id': announcement.id,
+        'title': announcement.title,
+        'content': announcement.content,
+        'created_at': announcement.created_at.isoformat() if announcement.created_at else None
+    }, room=f"society_{current_user.society_name}")
     
     return jsonify({
         'success': True,
@@ -1571,6 +1601,16 @@ def create_visitor_log():
     
     log_activity('Visitor Entry', f"Guard logged visitor {data['visitor_name']} for flat {data['flat_number']}", current_user)
     
+    if resident:
+        socketio.emit('new_visitor_pending', {
+            'visitor_id': visitor.id,
+            'visitor_name': visitor.visitor_name,
+            'visitor_phone': visitor.visitor_phone,
+            'purpose': visitor.purpose,
+            'flat_number': visitor.flat_number,
+            'guard_name': visitor.guard_name
+        }, room=f"user_{resident.id}")
+    
     return jsonify({
         'success': True,
         'message': 'Visitor entry created',
@@ -1696,6 +1736,14 @@ def respond_visitor_permission(visitor_id):
     db.session.commit()
     
     log_activity('Visitor Permission', f"Resident {action}ed visitor {visitor.visitor_name}", current_user)
+    
+    socketio.emit('visitor_permission_update', {
+        'visitor_id': visitor.id,
+        'visitor_name': visitor.visitor_name,
+        'permission_status': visitor.permission_status,
+        'flat_number': visitor.flat_number,
+        'action': action
+    }, room=f"society_{current_user.society_name}")
     
     return jsonify({
         'success': True,
@@ -2431,6 +2479,8 @@ def admin_mark_payment_paid():
 @app.route('/dashboard/resident')
 @login_required
 def resident_dashboard():
+    if not current_user.is_approved:
+        return redirect(url_for('index'))
     if current_user.user_type != 'resident' or current_user.role not in [
             'resident', 'admin'
     ]:
@@ -2441,6 +2491,8 @@ def resident_dashboard():
 @app.route('/dashboard/admin')
 @login_required
 def admin_dashboard():
+    if not current_user.is_approved:
+        return redirect(url_for('index'))
     if current_user.role != 'admin':
         return redirect('/')
     return render_template('admin_dashboard.html', user=current_user)
@@ -2449,6 +2501,8 @@ def admin_dashboard():
 @app.route('/dashboard/guard')
 @login_required
 def guard_dashboard():
+    if not current_user.is_approved:
+        return redirect(url_for('index'))
     if current_user.role != 'guard':
         return redirect('/')
     return render_template('guard_dashboard.html', user=current_user)
@@ -2457,6 +2511,8 @@ def guard_dashboard():
 @app.route('/dashboard/business')
 @login_required
 def business_dashboard():
+    if not current_user.is_approved:
+        return redirect(url_for('index'))
     if current_user.user_type != 'business':
         return redirect('/')
     return render_template('business_dashboard.html', user=current_user)
@@ -2688,12 +2744,9 @@ def approve_join_request():
     user = User.query.get(req.requester_id)
     if user:
         user.is_approved = True
-        req.status = 'approved'
-        req.handled_by_id = current_user.id
-        req.handled_by_name = current_user.full_name
-        req.handled_at = datetime.utcnow()
-        db.session.commit()
         log_activity('Request Approved', f"Approved {user.full_name} ({user.user_type})", current_user)
+        db.session.delete(req)
+        db.session.commit()
         return jsonify({'success': True, 'message': 'Request approved'})
     
     return jsonify({'success': False, 'message': 'User not found'}), 404
@@ -2713,13 +2766,11 @@ def reject_join_request():
     
     user = User.query.get(req.requester_id)
     if user:
+        user_name = user.full_name
         db.session.delete(user)
-        req.status = 'rejected'
-        req.handled_by_id = current_user.id
-        req.handled_by_name = current_user.full_name
-        req.handled_at = datetime.utcnow()
+        log_activity('Request Rejected', f"Rejected {user_name}", current_user)
+        db.session.delete(req)
         db.session.commit()
-        log_activity('Request Rejected', f"Rejected {user.full_name}", current_user)
         return jsonify({'success': True, 'message': 'Request rejected'})
     
     return jsonify({'success': False, 'message': 'User not found'}), 404
@@ -3532,7 +3583,19 @@ def approve_visitor(visitor_id):
 @login_required
 def upvote_request(req_id):
     req = MaintenanceRequest.query.get(req_id)
-    if not req: return jsonify({'success': False}), 404
+    if not req:
+        return jsonify({'success': False, 'message': 'Request not found'}), 404
+    
+    existing_upvote = MaintenanceUpvote.query.filter_by(
+        user_id=current_user.id,
+        request_id=req_id
+    ).first()
+    
+    if existing_upvote:
+        return jsonify({'success': False, 'message': 'Already upvoted', 'upvotes': req.upvotes or 0}), 400
+    
+    upvote = MaintenanceUpvote(user_id=current_user.id, request_id=req_id)
+    db.session.add(upvote)
     req.upvotes = (req.upvotes or 0) + 1
     db.session.commit()
     return jsonify({'success': True, 'upvotes': req.upvotes})
