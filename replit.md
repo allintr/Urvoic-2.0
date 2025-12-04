@@ -16,6 +16,19 @@ Urvoic is a comprehensive community management platform designed to connect resi
 
 ## Recent Changes (December 2025)
 
+### Latest Updates
+- Enhanced MaintenanceRequest model with is_public, upvotes, comments_count, current_status fields
+- Enhanced VisitorLog model with qr_code_link, is_pre_approved, guard_check_in_time, guard_check_out_time fields
+- Added new models: MaintenanceComment, BusinessBooking, Earnings for full feature support
+- Implemented login approval check - unapproved users cannot access dashboards
+- Fixed admin member management to correctly filter guards by user_type='guard'
+- Added guard check-in/check-out endpoints for real-time visitor tracking
+- Added maintenance upvote and comment system with public request display
+- Added business booking status workflow and earnings tracking endpoints
+- Removed all hardcoded dummy data from dashboard templates
+- All activity sections now load dynamically from /api/activity-logs
+
+### Previous Updates
 - Added Notification model with API endpoints for push notifications
 - Implemented Flask-SocketIO for real-time chat functionality
 - Connected guard dashboard to backend APIs for visitor management
