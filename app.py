@@ -1308,7 +1308,7 @@ def get_activity_logs():
     query = ActivityLog.query.filter_by(society_name=current_user.society_name)
     
     if context:
-        query = query.filter(ActivityLog.action.ilike(f'%{context}%'))
+        query = query.filter(ActivityLog.action.ilike(f'{context}%'))
     
     logs = query.order_by(ActivityLog.created_at.desc()).limit(limit).all()
     
@@ -3598,6 +3598,12 @@ def upvote_request(req_id):
     db.session.add(upvote)
     req.upvotes = (req.upvotes or 0) + 1
     db.session.commit()
+    
+    socketio.emit('upvote_update', {
+        'request_id': req_id,
+        'upvotes': req.upvotes
+    }, room=f"society_{current_user.society_name}")
+    
     return jsonify({'success': True, 'upvotes': req.upvotes})
 
 @app.route('/api/maintenance-requests/<int:req_id>/comment', methods=['POST'])
