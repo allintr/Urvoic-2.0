@@ -120,6 +120,7 @@
                     </div>
                     <div class="sub-links">
                         <a class="sub-link" onclick="navigateToLogin('register', 'resident')">Register my society</a>
+                        <a class="sub-link" onclick="showDemoPopup()">See a demo</a>
                     </div>
                 </div>
             </main>
@@ -626,9 +627,43 @@
                 </div>
             </div>
         </footer>
+        <div id="demoModal" class="demo-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+            <div style="background: white; border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0; color: #0b2f3a; font-size: 24px;">Demo Dashboards</h2>
+                    <button onclick="closeDemoPopup()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">✕</button>
+                </div>
+                <p style="color: #666; margin-bottom: 20px;">Explore our platform by viewing demo dashboards for different user roles:</p>
+                <div style="display: grid; gap: 10px;">
+                    <a href="/demo_resident" target="_blank" style="padding: 12px 16px; background: #00b67a; color: white; text-decoration: none; border-radius: 8px; text-align: center; cursor: pointer; font-weight: 500;">👥 Resident Dashboard</a>
+                    <a href="/demo_admin" target="_blank" style="padding: 12px 16px; background: #0b2f3a; color: white; text-decoration: none; border-radius: 8px; text-align: center; cursor: pointer; font-weight: 500;">👔 Admin Dashboard</a>
+                    <a href="/demo_guard" target="_blank" style="padding: 12px 16px; background: #1a5f7a; color: white; text-decoration: none; border-radius: 8px; text-align: center; cursor: pointer; font-weight: 500;">🛡️ Guard Dashboard</a>
+                    <a href="/demo_business" target="_blank" style="padding: 12px 16px; background: #00a86b; color: white; text-decoration: none; border-radius: 8px; text-align: center; cursor: pointer; font-weight: 500;">🏪 Business Dashboard</a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="/static/script.js"></script>
+    <script>
+        function showDemoPopup() {
+            const modal = document.getElementById('demoModal');
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDemoPopup() {
+            const modal = document.getElementById('demoModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        document.getElementById('demoModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDemoPopup();
+            }
+        });
+    </script>
 </body>
 
-                                                                   </html>
+</html>
