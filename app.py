@@ -113,6 +113,10 @@ class MaintenanceRequest(db.Model):
     description = db.Column(db.Text, nullable=False)
     request_type = db.Column(db.String(20), nullable=False)
     status = db.Column(db.String(20), default='pending')
+    current_status = db.Column(db.String(20), default='Open')
+    is_public = db.Column(db.Boolean, default=False)
+    upvotes = db.Column(db.Integer, default=0)
+    comments_count = db.Column(db.Integer, default=0)
     society_name = db.Column(db.String(200))
     flat_number = db.Column(db.String(50))
     created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -203,8 +207,12 @@ class VisitorLog(db.Model):
     resident_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     status = db.Column(db.String(20), default='pending')
     permission_status = db.Column(db.String(20), default='pending')
+    qr_code_link = db.Column(db.Text)
+    is_pre_approved = db.Column(db.Boolean, default=False)
     entry_time = db.Column(db.DateTime, default=datetime.utcnow)
     exit_time = db.Column(db.DateTime)
+    guard_check_in_time = db.Column(db.DateTime)
+    guard_check_out_time = db.Column(db.DateTime)
     is_pre_approved_service = db.Column(db.Boolean, default=False)
     service_provider_name = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -303,6 +311,37 @@ class Notification(db.Model):
     is_read = db.Column(db.Boolean, default=False)
     related_id = db.Column(db.Integer)
     society_name = db.Column(db.String(200))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class MaintenanceComment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    maintenance_request_id = db.Column(db.Integer, db.ForeignKey('maintenance_request.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_name = db.Column(db.String(100))
+    comment_text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class BusinessBooking(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    maintenance_request_id = db.Column(db.Integer, db.ForeignKey('maintenance_request.id'), nullable=False)
+    provider_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    scheduled_date = db.Column(db.String(50))
+    scheduled_time = db.Column(db.String(50))
+    status = db.Column(db.String(20), default='New')
+    society_name = db.Column(db.String(200))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Earnings(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    provider_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    booking_id = db.Column(db.Integer, db.ForeignKey('business_booking.id'))
+    amount = db.Column(db.Float)
+    status = db.Column(db.String(20), default='Pending Confirmation')
+    transaction_date = db.Column(db.DateTime, default=datetime.utcnow)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
@@ -411,6 +450,13 @@ def login():
             'success': False,
             'message': 'Invalid email or password'
         }), 401
+
+    if not user.is_approved:
+        return jsonify({
+            'success': False,
+            'message': 'Your account is pending admin approval',
+            'is_approved': False
+        }), 403
 
     session.permanent = True
     login_user(user, remember=True)
@@ -3454,3 +3500,68 @@ def demo_guard():
 @app.route('/demo_business')
 def demo_business():
     return render_template('demo_business.html')
+
+@app.route('/api/visitors', methods=['POST'])
+@login_required
+def create_visitor():
+    data = request.get_json()
+    visitor = VisitorLog(
+        visitor_name=data['visitor_name'],
+        visitor_phone=data['visitor_phone'],
+        purpose=data.get('purpose'),
+        flat_number=data.get('flat_number', current_user.flat_number),
+        society_name=current_user.society_name,
+        resident_id=current_user.id if current_user.user_type == 'resident' else None,
+        guard_id=current_user.id if current_user.user_type == 'guard' else None,
+        is_pre_approved=data.get('is_pre_approved', False)
+    )
+    db.session.add(visitor)
+    db.session.commit()
+    return jsonify({'success': True, 'visitor_id': visitor.id})
+
+@app.route('/api/visitors/<int:visitor_id>/approve', methods=['POST'])
+@login_required
+def approve_visitor(visitor_id):
+    visitor = VisitorLog.query.get(visitor_id)
+    if not visitor or visitor.resident_id != current_user.id:
+        return jsonify({'success': False}), 403
+    visitor.status = 'approved'
+    visitor.permission_status = 'approved'
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/maintenance-requests/<int:req_id>/upvote', methods=['POST'])
+@login_required
+def upvote_request(req_id):
+    req = MaintenanceRequest.query.get(req_id)
+    if not req: return jsonify({'success': False}), 404
+    req.upvotes = (req.upvotes or 0) + 1
+    db.session.commit()
+    return jsonify({'success': True, 'upvotes': req.upvotes})
+
+@app.route('/api/maintenance-requests/<int:req_id>/comment', methods=['POST'])
+@login_required
+def add_comment(req_id):
+    data = request.get_json()
+    comment = MaintenanceComment(
+        maintenance_request_id=req_id,
+        user_id=current_user.id,
+        user_name=current_user.full_name,
+        comment_text=data['comment']
+    )
+    db.session.add(comment)
+    req = MaintenanceRequest.query.get(req_id)
+    req.comments_count = (req.comments_count or 0) + 1
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/admin/approve-user/<int:user_id>', methods=['POST'])
+@login_required
+def approve_user(user_id):
+    if current_user.role != 'admin':
+        return jsonify({'success': False}), 403
+    user = User.query.get(user_id)
+    if not user: return jsonify({'success': False}), 404
+    user.is_approved = True
+    db.session.commit()
+    return jsonify({'success': True})
