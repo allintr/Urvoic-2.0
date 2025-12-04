@@ -3685,20 +3685,34 @@ def get_business_earnings():
     if current_user.user_type != 'business':
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     
-    earnings_list = Earnings.query.filter_by(provider_id=current_user.id).order_by(Earnings.created_at.desc()).all()
+    earnings_with_bookings = db.session.query(Earnings, BusinessBooking, MaintenanceRequest).outerjoin(
+        BusinessBooking, Earnings.booking_id == BusinessBooking.id
+    ).outerjoin(
+        MaintenanceRequest, BusinessBooking.maintenance_request_id == MaintenanceRequest.id
+    ).filter(Earnings.provider_id == current_user.id).order_by(Earnings.created_at.desc()).all()
+    
     total_earnings = db.session.query(db.func.sum(Earnings.amount)).filter_by(provider_id=current_user.id, status='Confirmed').scalar() or 0
     pending_earnings = db.session.query(db.func.sum(Earnings.amount)).filter_by(provider_id=current_user.id, status='Pending Confirmation').scalar() or 0
+    
+    earnings_data = []
+    for earning, booking, request in earnings_with_bookings:
+        earnings_data.append({
+            'id': earning.id,
+            'amount': earning.amount,
+            'status': earning.status,
+            'transaction_date': earning.transaction_date.isoformat() if earning.transaction_date else None,
+            'booking_id': booking.id if booking else None,
+            'booking_status': booking.status if booking else None,
+            'request_id': request.id if request else None,
+            'request_title': request.title if request else None,
+            'society_name': booking.society_name if booking else None
+        })
     
     return jsonify({
         'success': True,
         'total_earnings': total_earnings,
         'pending_earnings': pending_earnings,
-        'earnings': [{
-            'id': e.id,
-            'amount': e.amount,
-            'status': e.status,
-            'transaction_date': e.transaction_date.isoformat() if e.transaction_date else None
-        } for e in earnings_list]
+        'earnings': earnings_data
     })
 
 @app.route('/api/maintenance-requests/<int:req_id>/comments', methods=['GET'])
