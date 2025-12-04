@@ -2572,8 +2572,7 @@ def get_pending_guards():
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     
     pending = User.query.filter_by(
-        user_type='resident',
-        role='guard',
+        user_type='guard',
         society_name=current_user.society_name,
         is_approved=False
     ).all()
@@ -2634,8 +2633,7 @@ def get_all_guards():
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     
     guards = User.query.filter_by(
-        user_type='resident',
-        role='guard',
+        user_type='guard',
         society_name=current_user.society_name,
         is_approved=True
     ).all()
@@ -3565,3 +3563,114 @@ def approve_user(user_id):
     user.is_approved = True
     db.session.commit()
     return jsonify({'success': True})
+
+@app.route('/api/guard/visitor-checkin/<int:visitor_id>', methods=['POST'])
+@login_required
+def guard_checkin_visitor(visitor_id):
+    if current_user.user_type != 'guard':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    visitor = VisitorLog.query.get(visitor_id)
+    if not visitor or visitor.society_name != current_user.society_name:
+        return jsonify({'success': False, 'message': 'Visitor not found'}), 404
+    visitor.guard_check_in_time = datetime.utcnow()
+    visitor.guard_id = current_user.id
+    visitor.guard_name = current_user.full_name
+    visitor.status = 'inside'
+    db.session.commit()
+    socketio.emit('visitor_update', {'visitor_id': visitor_id, 'status': 'inside'}, room=f"society_{current_user.society_name}")
+    return jsonify({'success': True, 'message': 'Visitor checked in'})
+
+@app.route('/api/guard/visitor-checkout/<int:visitor_id>', methods=['POST'])
+@login_required
+def guard_checkout_visitor(visitor_id):
+    if current_user.user_type != 'guard':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    visitor = VisitorLog.query.get(visitor_id)
+    if not visitor or visitor.society_name != current_user.society_name:
+        return jsonify({'success': False, 'message': 'Visitor not found'}), 404
+    visitor.guard_check_out_time = datetime.utcnow()
+    visitor.exit_time = datetime.utcnow()
+    visitor.status = 'exited'
+    db.session.commit()
+    socketio.emit('visitor_update', {'visitor_id': visitor_id, 'status': 'exited'}, room=f"society_{current_user.society_name}")
+    return jsonify({'success': True, 'message': 'Visitor checked out'})
+
+@app.route('/api/business/booking/<int:booking_id>/status', methods=['POST'])
+@login_required
+def update_booking_status(booking_id):
+    if current_user.user_type != 'business':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    data = request.get_json()
+    new_status = data.get('status')
+    request_obj = MaintenanceRequest.query.get(booking_id)
+    if not request_obj or request_obj.assigned_business_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Booking not found'}), 404
+    old_status = request_obj.status
+    request_obj.status = new_status
+    request_obj.current_status = new_status
+    if new_status == 'Completed':
+        booking = BusinessBooking.query.filter_by(maintenance_request_id=booking_id, provider_id=current_user.id).first()
+        if booking:
+            booking.status = 'Completed'
+    db.session.commit()
+    log_activity('Booking Updated', f"Status changed from {old_status} to {new_status}", current_user)
+    return jsonify({'success': True, 'message': f'Status updated to {new_status}'})
+
+@app.route('/api/business/earnings', methods=['GET'])
+@login_required
+def get_business_earnings():
+    if current_user.user_type != 'business':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    
+    earnings_list = Earnings.query.filter_by(provider_id=current_user.id).order_by(Earnings.created_at.desc()).all()
+    total_earnings = db.session.query(db.func.sum(Earnings.amount)).filter_by(provider_id=current_user.id, status='Confirmed').scalar() or 0
+    pending_earnings = db.session.query(db.func.sum(Earnings.amount)).filter_by(provider_id=current_user.id, status='Pending Confirmation').scalar() or 0
+    
+    return jsonify({
+        'success': True,
+        'total_earnings': total_earnings,
+        'pending_earnings': pending_earnings,
+        'earnings': [{
+            'id': e.id,
+            'amount': e.amount,
+            'status': e.status,
+            'transaction_date': e.transaction_date.isoformat() if e.transaction_date else None
+        } for e in earnings_list]
+    })
+
+@app.route('/api/maintenance-requests/<int:req_id>/comments', methods=['GET'])
+@login_required
+def get_request_comments(req_id):
+    comments = MaintenanceComment.query.filter_by(maintenance_request_id=req_id).order_by(MaintenanceComment.created_at.desc()).all()
+    return jsonify({
+        'success': True,
+        'comments': [{
+            'id': c.id,
+            'user_name': c.user_name,
+            'comment_text': c.comment_text,
+            'created_at': c.created_at.isoformat() if c.created_at else None
+        } for c in comments]
+    })
+
+@app.route('/api/maintenance-requests/public', methods=['GET'])
+@login_required
+def get_public_requests():
+    requests = MaintenanceRequest.query.filter_by(
+        society_name=current_user.society_name,
+        is_public=True
+    ).order_by(MaintenanceRequest.upvotes.desc()).all()
+    
+    return jsonify({
+        'success': True,
+        'requests': [{
+            'id': r.id,
+            'title': r.title,
+            'description': r.description,
+            'status': r.status,
+            'current_status': r.current_status,
+            'upvotes': r.upvotes or 0,
+            'comments_count': r.comments_count or 0,
+            'flat_number': r.flat_number,
+            'created_at': r.created_at.isoformat() if r.created_at else None
+        } for r in requests]
+    })
