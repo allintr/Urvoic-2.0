@@ -14,3 +14,12 @@ requests
 eventlet
 flask-socketio
 python-socketio
+flask
+flask-cors
+flask-login
+flask-socketio
+flask-sqlalchemy
+pillow
+python-dotenv
+qrcode
+werkzeug
