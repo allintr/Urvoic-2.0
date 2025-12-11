@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#00b67a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Urvoic">
+    <link rel="apple-touch-icon" href="https://i.ibb.co/gMrgR5tG/1763226137808-modified.png">
+    <link rel="icon" type="image/png" href="https://i.ibb.co/gMrgR5tG/1763226137808-modified.png">
+    <link rel="manifest" href="/static/manifest.json">
+    <title>Urvoic - Community Platform</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar" id="appSidebar">
+        <a onclick="navigateToLogin('signup', 'business')" class="sidebar-btn-business">For businesses</a>
+        <a onclick="navigateToLogin('signin', 'resident')" class="sidebar-link">
+            Log in <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+        </a>
+        <a onclick="navigateToLogin('signup', 'resident')" class="sidebar-link">
+            Sign up <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+        </a>
+    </aside>
+
+    <div class="notification-overlay" id="notificationOverlay"></div>
+    <aside class="notification-panel" id="notificationPanel">
+        <div class="notification-header">
+            <h3>Notifications</h3>
+            <button style="background:none; border:none; cursor:pointer;" onclick="toggleNotifications()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="notification-body">
+            <div class="notification-icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+            </div>
+            <p>Log in to see your Notifications</p>
+            <a onclick="navigateToLogin('signin', 'resident')" class="notification-login-btn" style="color:white;">Log
+                in</a>
+        </div>
+    </aside>
+
+    <div class="site">
+        <header class="site-header">
+            <div class="header-inner">
+                <a onclick="navigateToHome()" class="brand">
+                    <img src="https://i.ibb.co/gMrgR5tG/1763226137808-modified.png" alt="Urvoic Logo"
+                        class="brand-image" />
+                    <span class="brand-name">Urvoic</span>
+                </a>
+                <div class="header-actions">
+                    <button class="icon-btn" aria-label="search" onclick="focusSearch()">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </button>
+                    <button class="icon-btn" aria-label="notifications" onclick="toggleNotifications()">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                    </button>
+                    <button class="icon-btn" id="menuBtn" aria-label="menu" onclick="toggleSidebar()">
+                        <svg id="burgerIcon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                        <svg id="crossIcon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div id="landing-view" class="view-section active-view">
+            <main class="hero">
+                <div class="hero-inner">
+                    <h1 class="hero-title">A better society starts with us</h1>
+                    <p class="hero-sub">Connect, Communicate &amp; Solve problems</p>
+                    <div class="search-row">
+                        <input id="mainSearchInput" class="search-input" placeholder="Join my society"
+                            aria-label="Join my society" />
+                        <button class="search-btn" aria-label="search-button"
+                            onclick="navigateToLogin('signup', 'resident')">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="sub-links">
+                        <a class="sub-link" onclick="navigateToLogin('register', 'resident')">Register my society</a>
+                    </div>
+                </div>
+            </main>
+
+            <section class="services-section">
+                <div class="container">
+                    <div class="services-wrapper" id="servicesWrapper">
+                        <div id="servicesMain" class="services-content">
+                            <h3 class="section-title">Services we are going to provide to the community</h3>
+                            <div class="services-grid">
+                                <div class="service-card residents-card" onclick="showResidentsDetails()">
+                                    <div class="service-icon"><svg viewBox="0 0 24 24" width="36" height="36"
+                                            fill="none" stroke="#0b2f3a" stroke-width="1.5" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <circle cx="12" cy="8" r="3"></circle>
+                                            <path d="M5.5 20a6.5 6.5 0 0113 0"></path>
+                                        </svg></div>
+                                    <div class="service-label">Residents</div>
+                                </div>
+                                <div class="service-card" onclick="showSocietyAdminDetails()">
+                                    <div class="service-icon"><svg viewBox="0 0 24 24" width="36" height="36"
+                                            fill="none" stroke="#0b2f3a" stroke-width="1.5" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <rect x="3" y="4" width="18" height="12" rx="2" ry="2"></rect>
+                                            <path d="M7 8h10"></path>
+                                            <path d="M7 12h10"></path>
+                                        </svg></div>
+                                    <div class="service-label">Society Admin</div>
+                                </div>
+                                <div class="service-card" onclick="showBusinessDetails()">
+                                    <div class="service-icon"><svg viewBox="0 0 24 24" width="36" height="36"
+                                            fill="none" stroke="#0b2f3a" stroke-width="1.5" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <path d="M3 21h18"></path>
+                                            <path d="M7 21V10"></path>
+                                            <path d="M17 21V13"></path>
+                                            <rect x="9" y="3" width="6" height="7" rx="1" ry="1"></rect>
+                                        </svg></div>
+                                    <div class="service-label">Businesses</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="residentsDetails" class="residents-detail-view">
+                            <div class="detail-header">
+                                <button class="back-btn" onclick="hideResidentsDetails()"><svg width="20" height="20"
+                                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M19 12H5M12 19l-7-7 7-7" />
+                                    </svg> Back</button>
+                                <div class="detail-title">Society is in your hands now!</div>
+                            </div>
+                            <div class="detail-layout">
+                                <div class="service-card detail-sidebar-card">
+                                    <div class="service-icon"><svg viewBox="0 0 24 24" width="36" height="36"
+                                            fill="none" stroke="#0b2f3a" stroke-width="1.5" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <circle cx="12" cy="8" r="3"></circle>
+                                            <path d="M5.5 20a6.5 6.5 0 0113 0"></path>
+                                        </svg></div>
+                                    <div class="service-label">Residents</div>
+                                </div>
+                                <div class="detail-grid">
+                                    <div class="detail-item"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"
+                                            stroke-linejoin="round" stroke-width="1.5">
+                                            <path
+                                                d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z">
+                                            </path>
+                                        </svg><span>Maintenance Request</span></div>
+                                    <div class="detail-item"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"
+                                            stroke-linejoin="round" stroke-width="1.5">
+                                            <polygon
+                                                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                                            </polygon>
+                                        </svg><span>Reviews</span></div>
+                                    <div class="detail-item"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"
+                                            stroke-linejoin="round" stroke-width="1.5">
+                                            <path d="M18 20V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v14"></path>
+                                            <path d="M2 20h20"></path>
+                                            <path d="M14 12v.01"></path>
+                                        </svg><span>Visitor Log</span></div>
+                                    <div class="detail-item"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"
+                                            stroke-linejoin="round" stroke-width="1.5">
+                                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                            <line x1="1" y1="10" x2="23" y2="10"></line>
+                                        </svg><span>Payments &amp; Bills</span></div>
+                                    <div class="detail-item"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"
+                                            stroke-linejoin="round" stroke-width="1.5">
+                                            <path d="M2 11.5a11 11 0 0 1 2.5-7.1M22 11.5a11 11 0 0 0-2.5-7.1"></path>
+                                            <path d="M12 2a9 9 0 0 1 6 9v6.5L22 22H2l4-4.5V11a9 9 0 0 1 6-9z"></path>
+                                        </svg><span>Announcement</span></div>
+                                    <div class="detail-item"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"
+                                            stroke-linejoin="round" stroke-width="1.5">
+                                            <path
+                                                d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                                            </path>
+                                        </svg><span>Residents Chat</span></div>
+                                    <div class="detail-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                                        </svg><span>Service Provider</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="societyAdminDetails" class="residents-detail-view">
+                            <div class="detail-header"><button class="back-btn" onclick="hideSocietyAdminDetails()"><svg
+                                        width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M19 12H5M12 19l-7-7 7-7" />
+                                    </svg> Back</button>
+                                <div class="detail-title">Society is in your hands now!</div>
+                            </div>
+                            <div class="admin-subsection">
+                                <div class="detail-layout">
+                                    <div class="service-card detail-sidebar-card">
+                                        <div class="service-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#0b2f3a"
+                                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                <circle cx="12" cy="7" r="4"></circle>
+                                            </svg></div>
+                                        <div class="service-label">President</div>
+                                    </div>
+                                    <div class="detail-grid">
+                                        <div class="detail-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                                <path
+                                                    d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z">
+                                                </path>
+                                            </svg><span>Maintenance</span></div>
+                                        <div class="detail-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                                <path d="M18 20V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v14"></path>
+                                                <path d="M2 20h20"></path>
+                                                <path d="M14 12v.01"></path>
+                                            </svg><span>Visitor Log</span></div>
+                                        <div class="detail-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                                <line x1="1" y1="10" x2="23" y2="10"></line>
+                                            </svg><span>Payments</span></div>
+                                        <div class="detail-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                                <path
+                                                    d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                                                </path>
+                                            </svg><span>Residents Chat</span></div>
+                                        <div class="detail-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                                <path d="M2 11.5a11 11 0 0 1 2.5-7.1M22 11.5a11 11 0 0 0-2.5-7.1">
+                                                </path>
+                                                <path d="M12 2a9 9 0 0 1 6 9v6.5L22 22H2l4-4.5V11a9 9 0 0 1 6-9z">
+                                                </path>
+                                            </svg><span>Announcement</span></div>
+                                        <div class="detail-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                                <circle cx="9" cy="7" r="4"></circle>
+                                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                            </svg><span>Residents</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="admin-subsection">
+                                <div class="detail-layout">
+                                    <div class="service-card detail-sidebar-card">
+                                        <div class="service-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#0b2f3a"
+                                                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                                <path d="m9.5 11.5 2 2 5-5"></path>
+                                            </svg></div>
+                                        <div class="service-label">Guard</div>
+                                    </div>
+                                    <div class="detail-grid">
+                                        <div class="detail-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                                <path d="M18 20V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v14"></path>
+                                                <path d="M2 20h20"></path>
+                                                <path d="M14 12v.01"></path>
+                                            </svg><span>Visitor Log</span></div>
+                                        <div class="detail-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                                <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline>
+                                                <path
+                                                    d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z">
+                                                </path>
+                                            </svg><span>Gate Status</span></div>
+                                        <div class="detail-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                                <path
+                                                    d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z">
+                                                </path>
+                                            </svg><span>Maint. Visitors</span></div>
+                                        <div class="detail-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z">
+                                                </path>
+                                                <polyline points="13 2 13 9 20 9"></polyline>
+                                            </svg><span>Shift Report</span></div>
+                                        <div class="detail-item"><svg viewBox="0 0 24 24" fill="none"
+                                                stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+                                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                                <circle cx="9" cy="7" r="4"></circle>
+                                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                            </svg><span>Residents</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="businessDetails" class="residents-detail-view">
+                            <div class="detail-header"><button class="back-btn" onclick="hideBusinessDetails()"><svg
+                                        width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M19 12H5M12 19l-7-7 7-7" />
+                                    </svg> Back</button>
+                                <div class="detail-title">Business Services</div>
+                            </div>
+                            <div class="detail-layout">
+                                <div class="service-card detail-sidebar-card">
+                                    <div class="service-icon"><svg viewBox="0 0 24 24" width="36" height="36"
+                                            fill="none" stroke="#0b2f3a" stroke-width="1.5" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <path d="M3 21h18"></path>
+                                            <path d="M7 21V10"></path>
+                                            <path d="M17 21V13"></path>
+                                            <rect x="9" y="3" width="6" height="7" rx="1" ry="1"></rect>
+                                        </svg></div>
+                                    <div class="service-label">Businesses</div>
+                                </div>
+                                <div class="detail-grid">
+                                    <div class="detail-item"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"
+                                            stroke-linejoin="round" stroke-width="1.5">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="12" cy="7" r="4"></circle>
+                                        </svg><span>Profile</span></div>
+                                    <div class="detail-item"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"
+                                            stroke-linejoin="round" stroke-width="1.5">
+                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                        </svg><span>Bookings</span></div>
+                                    <div class="detail-item"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"
+                                            stroke-linejoin="round" stroke-width="1.5">
+                                            <polygon
+                                                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                                            </polygon>
+                                        </svg><span>Reviews</span></div>
+                                    <div class="detail-item"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"
+                                            stroke-linejoin="round" stroke-width="1.5">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                                        </svg><span>Schedule</span></div>
+                                    <div class="detail-item"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round"
+                                            stroke-linejoin="round" stroke-width="1.5">
+                                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                        </svg><span>Earnings</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="promo-banner">
+                <div class="container banner-inner">
+                    <div class="banner-text">
+                        <h4 class="banner-title">Looking to grow your business?</h4>
+                        <p class="banner-sub">Increase your work with communities</p>
+                    </div>
+                    <div class="banner-action"><button class="btn-primary"
+                            onclick="navigateToLogin('signup', 'business')">Get started</button></div>
+                </div>
+            </section>
+
+            <section class="signup-options">
+                <div class="footer-inner container signup-inner">
+                    <h4>Shape a better living together</h4>
+                    <p class="signup-subtext">Your voice improves your living together</p>
+                    <div class="signup-image-wrapper"><img src="https://i.ibb.co/mCmvRj6x/IMG-20251110-221150.jpg"
+                            alt="Community" class="signup-vertical-image" /></div>
+                    <div class="button-row">
+                        <button onclick="navigateToLogin('signup', 'resident')" class="btn-option btn-secondary">Join my society</button>
+                        <button onclick="showDemoPopup()" class="btn-option btn-secondary">See Demo</button>
+                        <button onclick="navigateToLogin('register', 'resident')" class="btn-option btn-secondary">Register a Society</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="we-are-section">
+                <div class="container">
+                    <div class="we-are-inner">
+                        <div class="we-are-text">
+                            <h4 class="we-are-title">We're Urvoic</h4>
+                            <img src="https://i.ibb.co/JwfKGWwJ/IMG-20251110-220238.jpg" alt="Community"
+                                class="we-are-image" />
+                            <p class="we-are-sub">A community based Society platform. A platform where people living in
+                                the same society can Connect, Communicate, Solve problems &amp; make better choices
+                                together.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div id="login-view" class="view-section">
+            <main class="login-main">
+                <div class="login-card">
+                    <button onclick="navigateToHome()"
+                        style="background:none; border:none; color:var(--muted); cursor:pointer; margin-bottom:15px; display:flex; align-items:center; gap:5px; font-size:14px; font-weight:600;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 12H5M12 19l-7-7 7-7" />
+                        </svg>
+                        Back to Home
+                    </button>
+
+                    <h2 id="cardTitle">Resident Sign In</h2>
+
+                    <div class="form-toggle" id="authModeToggle">
+                        <button class="toggle-btn active" onclick="setAuthMode('signin')">Sign In</button>
+                        <button class="toggle-btn" onclick="setAuthMode('signup')">Sign Up</button>
+                        <button class="toggle-btn" onclick="setAuthMode('register')">Register Society</button>
+                    </div>
+
+                    <div class="form-toggle user-type-toggle" id="userTypeToggle">
+                        <button class="toggle-btn active" onclick="setUserType('resident')">Resident/Admin</button>
+                        <button class="toggle-btn" onclick="setUserType('business')">Business</button>
+                    </div>
+
+                    <div class="form-container">
+                        <form id="residentSignInForm" class="login-form active"
+                            onsubmit="handleLogin(event)">
+                            <div class="form-group"><label>Email or Phone Number</label><input type="text"
+                                    class="form-input" placeholder="Enter your email or phone" required></div>
+                            <div class="form-group"><label>Password</label><input type="password" class="form-input"
+                                    placeholder="••••••••" required></div>
+                            <a onclick="showForgotPasswordModal()" class="forgot-pass-link">Forgot password?</a>
+                            <button type="submit" class="form-submit-btn">Sign In</button>
+                            <div class="social-divider">or</div>
+                            <button type="button" class="social-btn" onclick="window.location.href='/google_login'"><svg role="img" viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.08-2.58 1.9-4.96 1.9-4.21 0-7.6-3.41-7.6-7.6s3.39-7.6 7.6-7.6c2.38 0 3.86.91 4.73 1.75l2.7-2.7C18.75 1.5 15.9.5 12.48.5c-6.62 0-12 5.38-12 12s5.38 12 12 12c6.94 0 11.7-4.84 11.7-11.82 0-.73-.07-1.42-.2-2.08h-11.5z"
+                                        fill="#4285F4" />
+                                </svg> Sign in with Google</button>
+                        </form>
+
+                        <form id="residentSignUpForm" class="login-form"
+                            onsubmit="handleResidentSignup(event)">
+                            <div class="form-group"><label>Full Name</label><input type="text" class="form-input"
+                                    placeholder="Enter your full name" required></div>
+                            <div class="form-group"><label>Email Address</label><input type="email" class="form-input"
+                                    placeholder="you@example.com" required></div>
+                            <div class="form-group"><label>Phone Number</label><input type="tel" class="form-input"
+                                    placeholder="Enter your phone number" required></div>
+                            <div class="form-group"><label>Password</label><input type="password" class="form-input"
+                                    placeholder="Create a password" required></div>
+                            <div class="form-group"><label>Select Your Society</label><input type="text"
+                                    class="form-input" placeholder="Search for your society..." required></div>
+
+                            <div class="form-group" id="residentFlatGroup"><label>Flat / House Number</label><input
+                                    type="text" class="form-input" placeholder="e.g., A-101 or 12B" required></div>
+
+                            <div class="form-group"><label>Your Role</label>
+                                <div class="role-toggle" id="res-signup-role-toggle">
+                                    <button type="button" class="role-btn active"
+                                        onclick="setRole(this, 'resident')">Resident</button>
+                                    <button type="button" class="role-btn"
+                                        onclick="setRole(this, 'admin')">Admin</button>
+                                    <button type="button" class="role-btn"
+                                        onclick="setRole(this, 'guard')">Guard</button>
+                                </div>
+                            </div>
+                            <button type="submit" class="form-submit-btn">Sign Up</button>
+                        </form>
+
+                        <form id="businessSignInForm" class="login-form"
+                            onsubmit="handleLogin(event)">
+                            <div class="form-group"><label>Email or Phone Number</label><input type="text"
+                                    class="form-input" placeholder="Enter your email or phone" required></div>
+                            <div class="form-group"><label>Password</label><input type="password" class="form-input"
+                                    placeholder="••••••••" required></div>
+                            <a onclick="showForgotPasswordModal()" class="forgot-pass-link">Forgot password?</a>
+                            <button type="submit" class="form-submit-btn">Sign In</button>
+                            <div class="social-divider">or</div>
+                            <button type="button" class="social-btn" onclick="window.location.href='/google_login'"><svg role="img" viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.08-2.58 1.9-4.96 1.9-4.21 0-7.6-3.41-7.6-7.6s3.39-7.6 7.6-7.6c2.38 0 3.86.91 4.73 1.75l2.7-2.7C18.75 1.5 15.9.5 12.48.5c-6.62 0-12 5.38-12 12s5.38 12 12 12c6.94 0 11.7-4.84 11.7-11.82 0-.73-.07-1.42-.2-2.08h-11.5z"
+                                        fill="#4285F4" />
+                                </svg> Sign in with Google</button>
+                        </form>
+
+                        <form id="businessSignUpForm" class="login-form"
+                            onsubmit="handleBusinessSignup(event)">
+                            <div class="form-group"><label>Business Name</label><input type="text" class="form-input"
+                                    placeholder="Your Company LLC" required></div>
+                            <div class="form-group"><label>Owner / Manager Name</label><input type="text"
+                                    class="form-input" placeholder="Enter primary contact name" required></div>
+                            <div class="form-group"><label>Email Address</label><input type="email" class="form-input"
+                                    placeholder="you@company.com" required></div>
+                            <div class="form-group"><label>Phone Number</label><input type="tel" class="form-input"
+                                    placeholder="Enter contact or WhatsApp number" required></div>
+                            <div class="form-group"><label>Password</label><input type="password" class="form-input"
+                                    placeholder="Create a password" required></div>
+
+                            <div class="form-group"><label>Select Societies (You can select multiple)</label><input type="text" class="form-input"
+                                    id="businessSocietyInput" placeholder="Search and select societies..." data-multiple="true"></div>
+
+                            <div class="form-group"><label>Business Category</label><input type="text"
+                                    class="form-input" placeholder="e.g., Electrician, Grocery, Cleaning..." required>
+                            </div>
+
+                            <button type="submit" class="form-submit-btn">Register Business</button>
+                        </form>
+
+                        <form id="societyRegisterForm" class="login-form"
+                            onsubmit="handleSocietyRegister(event)">
+                            <div class="form-group"><label>Society / Apartment Name</label><input type="text"
+                                    class="form-input" placeholder="e.g., Sunshine Residency" required></div>
+                            <div class="form-group"><label>Address</label><input type="text" class="form-input"
+                                    placeholder="Complete address" required></div>
+
+                            <div class="form-group"><label>Your Flat / House Number</label><input type="text"
+                                    class="form-input" placeholder="e.g., A-101" required></div>
+
+                            <div class="form-group"><label>Admin Name</label><input type="text" class="form-input"
+                                    placeholder="President / Secretary Name" required></div>
+                            <div class="form-group"><label>Admin Email</label><input type="email" class="form-input"
+                                    placeholder="Used for login & communication" required></div>
+                            <div class="form-group"><label>Admin Phone Number</label><input type="tel"
+                                    class="form-input" placeholder="For verification" required></div>
+                            <div class="form-group"><label>Password</label><input type="password" class="form-input"
+                                    placeholder="Create admin's first password" required></div>
+                            <button type="submit" class="form-submit-btn">Register Society</button>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <div id="info-view" class="view-section">
+            <main class="info-main">
+                <div class="info-container">
+                    <div class="info-header">
+                        <h2 class="info-title" id="pageTitle">Page Title</h2>
+                        <div class="info-subtitle" id="pageSubtitle">Subtitle</div>
+                    </div>
+                    <div class="info-content" id="pageContent">
+                    </div>
+                    <div style="margin-top: 30px;">
+                        <button class="btn-primary" onclick="navigateToHome()">Back to Home</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <footer class="site-footer">
+            <div class="footer-content container">
+                <div class="footer-top">
+                    <img src="https://i.ibb.co/gMrgR5tG/1763226137808-modified.png" alt="Urvoic Logo"
+                        class="footer-logo" />
+                    <span class="footer-brand-name">Urvoic</span>
+                </div>
+                <div class="footer-links-grid">
+                    <div class="footer-col">
+                        <h5>Company</h5>
+                        <ul>
+                            <li><a onclick="navigateToInfo('about')">About Us</a></li>
+                            <li><a onclick="navigateToInfo('contact')">Contact</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Community</h5>
+                        <ul>
+                            <li><a onclick="navigateToInfo('help')">Help Center</a></li>
+                            <li><a onclick="navigateToLogin('signup', 'resident')">Sign up</a></li>
+                            <li><a onclick="navigateToLogin('signin', 'resident')">Log in</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Legal</h5>
+                        <ul>
+                            <li><a onclick="navigateToInfo('privacy')">Privacy Policy</a></li>
+                            <li><a onclick="navigateToInfo('terms')">Terms &amp; Conditions</a></li>
+                            <li><a onclick="navigateToInfo('guidelines')">Guidelines</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-col">
+                        <h5>Contact</h5>
+                        <ul>
+                            <li><strong>Email:</strong> urvoiccontact@gmail.com</li>
+                            <li><strong>Phone:</strong> +91 8750416383</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p class="copyright">&copy; 2025 Urvoic. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+        <div id="demoModal" class="demo-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+            <div style="background: white; border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0; color: #0b2f3a; font-size: 24px;">Demo Dashboards</h2>
+                    <button onclick="closeDemoPopup()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">✕</button>
+                </div>
+                <p style="color: #666; margin-bottom: 20px;">Explore our platform by viewing demo dashboards for different user roles:</p>
+                <div style="display: grid; gap: 10px;">
+                    <a href="/demo_resident" target="_blank" style="padding: 12px 16px; background: #00b67a; color: white; text-decoration: none; border-radius: 8px; text-align: center; cursor: pointer; font-weight: 500;">👥 Resident Dashboard</a>
+                    <a href="/demo_admin" target="_blank" style="padding: 12px 16px; background: #0b2f3a; color: white; text-decoration: none; border-radius: 8px; text-align: center; cursor: pointer; font-weight: 500;">👔 Admin Dashboard</a>
+                    <a href="/demo_guard" target="_blank" style="padding: 12px 16px; background: #1a5f7a; color: white; text-decoration: none; border-radius: 8px; text-align: center; cursor: pointer; font-weight: 500;">🛡️ Guard Dashboard</a>
+                    <a href="/demo_business" target="_blank" style="padding: 12px 16px; background: #00a86b; color: white; text-decoration: none; border-radius: 8px; text-align: center; cursor: pointer; font-weight: 500;">🏪 Business Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+    <script>
+        function showDemoPopup() {
+            const modal = document.getElementById('demoModal');
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDemoPopup() {
+            const modal = document.getElementById('demoModal');
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        document.getElementById('demoModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDemoPopup();
+            }
+        });
+    </script>
+</body>
+
+</html>

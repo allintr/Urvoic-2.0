@@ -1,0 +1,920 @@
+<!-- Paste your Resident Dashboard HTML here -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upavan Apartment - Urvoic</title>
+    <link rel="stylesheet" href="/static/resident_dashboard.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.0/socket.io.min.js"></script>
+    <script src="/static/resident_dashboard.js" defer></script>
+</head>
+<body>
+<script>
+    window.currentUserId = {{ current_user_id|tojson }};
+</script>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<nav class="sidebar-nav" id="sidebar-nav">
+    <div class="sidebar-profile">
+        <div class="profile-pic-placeholder">{{ user.full_name[0].upper() }}</div>
+        <h4 class="profile-name">{{ user.full_name }}</h4>
+        <p class="profile-flat">Flat {{ user.flat_number }}</p>
+        <a onclick="showMyProfilePage()" class="btn-sidebar btn-view-profile">View Profile</a>
+    </div>
+    <div class="sidebar-links">
+        <a onclick="navigateToRecentActivities()" class="btn-sidebar btn-past-activities">Recent Activities</a>
+        <a onclick="showPastActivitiesPage()" class="btn-sidebar btn-recent-activities">Past Activities</a>
+        <a onclick="navigateToInfo('contact')" class="btn-sidebar btn-support">Support</a>
+    </div>
+    <div class="sidebar-footer">
+        <a href="#" class="btn-sidebar btn-logout">
+            <i data-lucide="log-out"></i>
+            <span>Log Out</span>
+        </a>
+    </div>
+</nav>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<div class="notification-overlay" id="notificationOverlay"></div>
+<aside class="notification-panel" id="notificationPanel">
+    <div class="notification-header">
+        <h3>Notifications</h3>
+        <button style="background:none; border:none; cursor:pointer;" onclick="toggleNotifications()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+    </div>
+    <div class="notification-panel-body">
+        <ul class="notification-list" id="resident-notification-list">
+        </ul>
+        <div style="padding: 20px; text-align: center; color: #999;">
+            <p>No notifications yet</p>
+        </div>
+    </div>
+    <div class="notification-panel-footer">
+        <button class="btn-primary" style="width: 100%;" onclick="showToast('Loading all notifications...', 'success')">View All Notifications</button>
+    </div>
+</aside>
+
+<div class="site">
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" onclick="showDashboardPage()" style="text-decoration:none;">
+        <img src="https://i.ibb.co/gMrgR5tG/1763226137808-modified.png" alt="Urvoic Logo" class="brand-image" />
+        <span class="brand-name">Urvoic</span>
+      </a>
+      <div class="header-actions">
+        <button class="icon-btn" aria-label="Search" onclick="focusSearch()"> <i data-lucide="search"></i> </button>
+        <button class="icon-btn" aria-label="Announcements" onclick="showAnnouncementPage()"> <i data-lucide="megaphone"></i> </button>
+        <button class="icon-btn" aria-label="Notifications"> <i data-lucide="bell"></i> </button>
+        <button class="icon-btn" id="hamburger-btn" aria-label="Open menu">
+            <i data-lucide="menu" class="icon-menu"></i>
+            <i data-lucide="x" class="icon-close"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div id="resident-dashboard-view" class="view-section active-view">
+      <main class="hero">
+        <div class="hero-inner">
+          <h1 class="hero-title">{{ user.society_name }}</h1>
+          <p class="hero-sub">Welcome back {{ user.full_name }}!</p>
+          <div class="search-row">
+            <input id="heroSearchInput" class="search-input" placeholder="Search for a service..." aria-label="Search for a service" />
+            <button class="search-btn" aria-label="search-button" onclick="handleSearch()">
+              <i data-lucide="search" style="width: 18px; height: 18px;"></i>
+            </button>
+          </div>
+        </div>
+      </main>
+
+      <section class="services-section">
+        <div class="container">
+          <h3 class="section-title">Society is in your hands now!</h3>
+          <div class="services-grid">
+            <div class="service-card" onclick="showMaintenancePage()">
+              <div class="service-icon"><i data-lucide="wrench" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i></div>
+              <div class="service-label">Maintenance Request</div>
+            </div>
+            <div class="service-card" onclick="showReviewPage()">
+              <div class="service-icon"><i data-lucide="star" width="36" height="36" fill="#0b2f3a" stroke="#0b2f3a" stroke-width="1.5"></i></div>
+              <div class="service-label">Reviews</div>
+            </div>
+            <div class="service-card" onclick="showVisitorLogPage()">
+              <div class="service-icon"><i data-lucide="door-open" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i></div>
+              <div class="service-label">Visitor Log</div>
+            </div>
+            <div class="service-card" onclick="showPaymentsPage()">
+              <div class="service-icon"><i data-lucide="credit-card" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i></div>
+              <div class="service-label">Payments & Bills</div>
+            </div>
+            <div class="service-card" onclick="showServiceProvidersPage()">
+              <div class="service-icon"><i data-lucide="briefcase" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i></div>
+              <div class="service-label">Service Providers</div>
+            </div>
+            <div class="service-card" onclick="showResidentsChatPage()">
+              <div class="service-icon"><i data-lucide="message-square" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i></div>
+              <div class="service-label">Residents Chat</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="signup-options" id="community-snapshot-section"> 
+        <div class="footer-inner container signup-inner"> 
+          <h4>Your Community Snapshot</h4> 
+          <p class="signup-subtext">Quick view of your recent activities and community happenings.</p> 
+          <div class="activity-grid-wrapper"> 
+            <div class="activity-card activity-left"> <h5 class="activity-title">Recent Activity Log</h5> 
+              <ul class="activity-list" id="resident-activity-list"> 
+                <li style="text-align:center;color:#999;">Loading activities...</li>
+              </ul> 
+              <img src="https://i.ibb.co/mCmvRj6x/IMG-20251110-221150.jpg" alt="A vertical abstract community illustration" class="signup-vertical-image" /> 
+            </div> 
+            <div class="activity-card activity-right"> 
+              <h5 class="activity-title">Community Suggestions</h5> 
+              <div class="chat-demo-box" id="community-chat-preview"> 
+                <p style="color:#999;font-size:14px;">Loading chat...</p>
+                <a onclick="showResidentsChatPage()" class="btn-chat-view" style="cursor:pointer;">View Chat</a> 
+              </div> 
+            </div> 
+          </div> 
+        </div> 
+      </section>
+      
+      <section class="we-are-section"> 
+        <div class="container"> 
+          <div class="we-are-inner we-are-grid"> 
+            <div class="we-are-left"> 
+              <h4 class="we-are-title">We're Urvoic</h4> 
+              <img src="https://i.ibb.co/JwfKGWwJ/IMG-20251110-220238.jpg" alt="Horizontal community illustration" class="we-are-image" /> 
+              <div class="mission-box"> 
+                <h5 class="mission-title">Our Mission</h5> 
+                <p class="we-are-sub">A community based Society platform. A platform where people living in the same society can Connect, Communicate, Solve problems &amp; make better choices together.</p> 
+              </div> 
+            </div> 
+            <div class="we-are-right"> 
+              <div class="rating-box"> 
+                <h5 class="rating-title">Your satisfaction is our success</h5> 
+                <div class="star-rating-icons" id="urvoic-rating"> 
+                    <i data-lucide="star" data-rating="1" fill="#ff8c00" stroke="#ff8c00"></i> 
+                    <i data-lucide="star" data-rating="2" fill="#ff8c00" stroke="#ff8c00"></i> 
+                    <i data-lucide="star" data-rating="3" fill="#ff8c00" stroke="#ff8c00"></i> 
+                    <i data-lucide="star" data-rating="4" fill="#ff8c00" stroke="#ff8c00"></i> 
+                    <i data-lucide="star" data-rating="5" fill="#ff8c00" stroke="#ff8c00"></i> 
+                </div> 
+                <p id="rating-message" class="rating-message-text">Click a star to rate us!</p> 
+              </div> 
+              <div class="chat-demo-orange"> 
+                <h5 class="chat-demo-title">Live Society Chat</h5> 
+                <div id="quick-chat-preview">
+                  <p style="color:#999;font-size:14px;">Loading chat...</p>
+                </div>
+                <a onclick="showResidentsChatPage()" class="btn-chat-view" style="cursor:pointer; display:inline-block; margin-top:10px;">Join Chat</a>
+              </div> 
+            </div> 
+          </div> 
+        </div> 
+      </section>
+  </div> 
+  
+  <div id="maintenance-view" class="view-section">
+      <main class="page-main">
+          <div class="container">
+              <div class="page-header">
+                  <button class="icon-btn" onclick="showDashboardPage()" style="background: var(--glass); color: var(--dark); border: 1px solid var(--glass);">
+                       <i data-lucide="arrow-left"></i>
+                  </button>
+                  <div class="page-header-icon"> <i data-lucide="wrench"></i> </div>
+                  <div> <h1 class="page-title">Maintenance Request</h1> <p class="page-subtitle">Submit a new request or view public issues</p> </div>
+              </div>
+              <div class="page-card">
+                  <form onsubmit="handleFormSubmit(event, 'Request Submitted!')">
+                      <div class="form-group">
+                          <label>Request Type</label>
+                          <div class="form-toggle" id="maintenanceScopeToggle">
+                              <button type="button" class="toggle-btn active" data-value="society">Society (Public)</button>
+                              <button type="button" class="toggle-btn" data-value="private">Private (Personal)</button>
+                          </div>
+                          <p style="font-size:12px; color:var(--muted); margin-top:5px;">*Society requests are visible to all. Private are assigned to service providers.</p>
+                      </div>
+
+                      <div class="form-group">
+                          <label for="category">Category</label>
+                          <select id="category" class="form-input" required>
+                              <option value="">Select a category...</option>
+                              <option value="plumbing">Plumbing</option> <option value="electrical">Electrical</option> <option value="carpentry">Carpentry</option> <option value="parking">Parking Issue</option> <option value="noise">Noise Complaint</option> <option value="common-area">Common Area</option> <option value="other">Other</option>
+                          </select>
+                      </div>
+                      <div class="form-group">
+                          <label for="description">Describe the Issue</label>
+                          <textarea id="description" class="form-input" rows="5" placeholder="e.g., The kitchen sink is leaking or My parking spot was taken..." required></textarea>
+                      </div>
+                      <div class="form-group">
+                          <label for="upload">Upload Photo (Optional)</label>
+                          <input type="file" id="upload" class="form-input" accept="image/*">
+                      </div>
+                      
+                      <button type="submit" class="form-submit-btn">Submit Request</button>
+                  </form>
+              </div>
+              
+              <div class="form-toggle" id="requestTypeToggle" style="margin: 20px 0;">
+                  <button type="button" class="toggle-btn active" data-value="public">Public Requests</button>
+                  <button type="button" class="toggle-btn" data-value="private">My Private Requests</button>
+              </div>
+              
+              <div id="public-requests-section">
+                  <h2 class="feed-title">Public Requests</h2>
+                  <div class="item-grid" id="public-requests-grid">
+                      <p style="text-align:center;color:#999;padding:20px;">Loading public requests...</p>
+                  </div>
+              </div>
+              
+              <div id="private-requests-section" style="display:none;">
+                  <h2 class="feed-title">My Private Requests</h2>
+                  <div class="item-grid" id="private-requests-grid">
+                      <p style="text-align:center; color:var(--muted); padding:20px;">No private requests. Create one above!</p>
+                  </div>
+              </div>
+          </div>
+      </main>
+  </div> 
+  
+  <div id="review-view" class="view-section">
+      <main class="page-main">
+          <div class="container">
+              <div class="page-header">
+                  <button class="icon-btn" onclick="showDashboardPage()" style="background: var(--glass); color: var(--dark); border: 1px solid var(--glass);">
+                       <i data-lucide="arrow-left"></i>
+                  </button>
+                  <div class="page-header-icon" style="background-color: #fff4e6; color: var(--orange);">
+                      <i data-lucide="star"></i>
+                  </div>
+                  <div>
+                      <h1 class="page-title">Reviews</h1>
+                      <p class="page-subtitle">Write a review or see public feedback</p>
+                  </div>
+              </div>
+              
+              <div class="page-card">
+                  <form onsubmit="handleFormSubmit(event, 'Review Submitted!')">
+                      <div class="form-group">
+                          <label for="review-category">Review Category</label>
+                          <select id="review-category" class="form-input" required>
+                              <option value="">Select a category...</option>
+                              <option value="security">Security Guards</option>
+                              <option value="maintenance">Maintenance Staff</option>
+                              <option value="services">Overall Society Services</option>
+                              <option value="business">Platform Business/Service</option>
+                          </select>
+                      </div>
+                      <div class="form-group">
+                          <label>Your Rating</label>
+                          <div class="star-rating-form" id="reviewStarRating">
+                              <i data-lucide="star" data-value="1"></i> <i data-lucide="star" data-value="2"></i> <i data-lucide="star" data-value="3"></i> <i data-lucide="star" data-value="4"></i> <i data-lucide="star" data-value="5"></i>
+                          </div>
+                          <input type="hidden" id="starRatingInput" value="0" required>
+                      </div>
+                      <div class="form-group">
+                          <label for="review-description">Review Details</label>
+                          <textarea id="review-description" class="form-input" rows="5" placeholder="Share your experience..." required></textarea>
+                      </div>
+                      <div class="form-group">
+                          <label for="review-upload">Upload Photo (Optional)</label>
+                          <input type="file" id="review-upload" class="form-input" accept="image/*">
+                      </div>
+                      <button type="submit" class="form-submit-btn">Submit Review</button>
+                  </form>
+              </div>
+              
+              <h2 class="feed-title">Public Reviews</h2>
+              <p style="font-size:13px; color:var(--muted); margin-bottom:15px;">All submitted reviews appear here for the community to see.</p>
+              
+              <div class="item-grid" id="public-reviews-grid">
+                  <p style="text-align:center;color:#999;padding:20px;">Loading reviews...</p>
+              </div>
+          </div>
+      </main>
+  </div> 
+  
+  <div id="visitor-log-view" class="view-section">
+      <main class="page-main">
+          <div class="container">
+              <div class="page-header">
+                  <button class="icon-btn" onclick="showDashboardPage()" style="background: var(--glass); color: var(--dark); border: 1px solid var(--glass);">
+                       <i data-lucide="arrow-left"></i>
+                  </button>
+                  <div class="page-header-icon" style="background-color: var(--blue-bg); color: var(--blue);">
+                      <i data-lucide="door-open"></i>
+                  </div>
+                  <div>
+                      <h1 class="page-title">Visitor Log</h1>
+                      <p class="page-subtitle">Manage guest and delivery entries</p>
+                  </div>
+              </div>
+              
+              <div class="page-card">
+                  <div class="form-toggle" id="visitorToggle">
+                      <button type="button" class="toggle-btn active" data-target="pre-approve-form">Pre-Approve Visitor</button>
+                      <button type="button" class="toggle-btn" data-target="pending-requests-list">Pending Requests (2)</button>
+                  </div>
+                  
+                  <div id="pre-approve-form" class="visitor-form-content active">
+                      <form onsubmit="handleFormSubmit(event, 'Visitor Pre-Approved!')">
+                          <div class="form-group">
+                              <label for="visitor-name">Visitor Name</label>
+                              <input type="text" id="visitor-name" class="form-input" placeholder="e.g., Rohan Sharma" required>
+                          </div>
+                          <div class="form-group">
+                              <label for="visitor-type">Visitor Type</label>
+                              <select id="visitor-type" class="form-input" required>
+                                  <option value="">Select a type...</option>
+                                  <option value="guest">Guest</option>
+                                  <option value="delivery">Delivery</option>
+                                  <option value="service">Service (Electrician, etc.)</option>
+                              </select>
+                          </div>
+                          <div class="form-grid-2">
+                              <div class="form-group">
+                                  <label for="visitor-date">Expected Date</label>
+                                  <input type="date" id="visitor-date" class="form-input" required>
+                              </div>
+                              <div class="form-group">
+                                  <label for="visitor-time">Expected Time</label>
+                                  <input type="time" id="visitor-time" class="form-input" required>
+                              </div>
+                          </div>
+                          <div class="form-grid-2">
+                              <button type="submit" class="form-submit-btn">Pre-Approve Entry</button>
+                              <button type="button" class="form-submit-btn" style="background:var(--blue);" id="generate-qr-btn">Generate QR Code</button>
+                          </div>
+                          <div id="qr-code-display" style="text-align:center; margin-top:15px; display:none;">
+                              <p style="font-size:13px; color:var(--muted);">Share this QR with your visitor:</p>
+                              <div id="qr-code-container"></div>
+                          </div>
+                      </form>
+                  </div>
+                  
+                  <div id="pending-requests-list" class="visitor-form-content">
+                      <p style="text-align:center;color:#999;padding:20px;">Loading pending requests...</p>
+                  </div>
+              </div>
+              
+              <h2 class="feed-title">Visitor History</h2>
+              
+              <div class="item-grid" id="visitor-history-grid">
+                  <p style="text-align:center;color:#999;padding:20px;">Loading visitor history...</p>
+              </div> 
+          </div>
+      </main>
+  </div> 
+  
+  <div id="payments-view" class="view-section">
+      <main class="page-main">
+          <div class="container">
+              <div class="page-header">
+                  <button class="icon-btn" onclick="showDashboardPage()" style="background: var(--glass); color: var(--dark); border: 1px solid var(--glass);">
+                       <i data-lucide="arrow-left"></i>
+                  </button>
+                  <div class="page-header-icon" style="background-color: var(--blue-bg); color: var(--blue);">
+                      <i data-lucide="credit-card"></i>
+                  </div>
+                  <div>
+                      <h1 class="page-title">Payments & Bills</h1>
+                      <p class="page-subtitle">View and pay your society dues</p>
+                  </div>
+              </div>
+              
+              <div id="pending-dues-section">
+                  <h2 class="feed-title">Pending Dues</h2>
+                  <div id="pending-dues-list" style="margin-bottom: 24px;">
+                      <p style="text-align:center; color:var(--muted); padding:20px;">No pending dues at this time.</p>
+                  </div>
+              </div>
+              
+              <div class="bill-card">
+                  <h3 class="bill-label">Monthly Maintenance</h3>
+                  <div class="bill-amount">₹2,500.00</div>
+                  <div class="bill-due-date">Due by 20 Nov 2025</div>
+                  <button class="btn-pay-now" onclick="handlePayment()">Pay Now</button>
+                  
+                  <div class="payment-options-grid">
+                      <button class="btn-payment-method" onclick="showToast('Opening UPI payment...', 'success')">
+                          <i data-lucide="smartphone"></i>
+                          <div>UPI</div>
+                      </button>
+                      <button class="btn-payment-method" onclick="showToast('Opening Card payment...', 'success')">
+                          <i data-lucide="credit-card"></i>
+                          <div>Card</div>
+                      </button>
+                      <button class="btn-payment-method" onclick="showToast('Opening Wallet payment...', 'success')">
+                          <i data-lucide="wallet"></i>
+                          <div>Wallets</div>
+                      </button>
+                  </div>
+              </div>
+              
+              <h2 class="feed-title">Payment History</h2>
+              
+              <div class="item-grid">
+                  <div class="history-item">
+                      <div class="history-icon maintenance">
+                          <i data-lucide="shield"></i>
+                      </div>
+                      <div class="history-info">
+                          <div class="history-title">Maintenance Bill - Oct 2025</div>
+                          <div class="history-date">Paid on 05 Oct 2025</div>
+                      </div>
+                      <div class="history-details">
+                          <div class="history-amount">₹2,500.00</div>
+                          <button class="btn-download" onclick="showToast('Downloading receipt...', 'success')"><i data-lucide="download"></i> Receipt</button>
+                      </div>
+                  </div>
+                  <div class="history-item">
+                      <div class="history-icon service">
+                          <i data-lucide="plug"></i>
+                      </div>
+                      <div class="history-info">
+                          <div class="history-title">Electrician Service</div>
+                          <div class="history-date">Paid on 02 Oct 2025</div>
+                      </div>
+                      <div class="history-details">
+                          <div class="history-amount">₹300.00</div>
+                          <button class="btn-download" onclick="showToast('Downloading receipt...', 'success')"><i data-lucide="download"></i> Receipt</button>
+                      </div>
+                  </div>
+                  <div class="history-item">
+                      <div class="history-icon maintenance">
+                          <i data-lucide="shield"></i>
+                      </div>
+                      <div class="history-info">
+                          <div class="history-title">Maintenance Bill - Sep 2025</div>
+                          <div class="history-date">Paid on 04 Sep 2025</div>
+                      </div>
+                      <div class="history-details">
+                          <div class="history-amount">₹2,500.00</div>
+                          <button class="btn-download" onclick="showToast('Downloading receipt...', 'success')"><i data-lucide="download"></i> Receipt</button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </main>
+  </div> 
+  
+  <div id="announcement-view" class="view-section">
+      <main class="page-main">
+          <div class="container">
+              <div class="page-header">
+                  <button class="icon-btn" onclick="showDashboardPage()" style="background: var(--glass); color: var(--dark); border: 1px solid var(--glass);">
+                       <i data-lucide="arrow-left"></i>
+                  </button>
+                  <div class="page-header-icon" style="background-color: var(--green-bg); color: var(--brand);">
+                      <i data-lucide="megaphone"></i>
+                  </div>
+                  <div>
+                      <h1 class="page-title">Announcements</h1>
+                      <p class="page-subtitle">Notices from the society admin</p>
+                  </div>
+              </div>
+              
+              <h2 class="feed-title">Recent Announcements</h2>
+              
+              <div class="announcement-feed">
+                  <div class="announcement-card">
+                      <div class="unread-dot"></div>
+                      <div class="history-icon icon-emergency">
+                          <i data-lucide="alert-triangle"></i>
+                      </div>
+                      <div class="announcement-content">
+                          <div class="announcement-title">EMERGENCY: Main Gate Blocked</div>
+                          <div class="announcement-date">15 Nov 2025, 1:30 AM</div>
+                          <div class="announcement-body">
+                              <p>A vehicle has broken down and is blocking the main entry gate. Please use the exit gate (Gate 2) for all entry and exit until further notice. Towing service is on the way.</p>
+                          </div>
+                          <div class="announcement-actions">
+                              <button class="btn-mark-read">Mark as Read</button>
+                          </div>
+                      </div>
+                  </div>
+                  <div class="announcement-card">
+                      <div class="unread-dot"></div>
+                      <div class="history-icon icon-meeting">
+                          <i data-lucide="users"></i>
+                      </div>
+                      <div class="announcement-content">
+                          <div class="announcement-title">Annual General Meeting (AGM) Notice</div>
+                          <div class="announcement-date">14 Nov 2025, 5:00 PM</div>
+                          <div class="announcement-body">
+                              <p>This is to inform all residents that the Annual General Meeting will be held on Sunday, 30th Nov 2025, at 11:00 AM in the society clubhouse. Agenda will be shared shortly.</p>
+                          </div>
+                          <div class="announcement-actions">
+                              <button class="btn-mark-read">Mark as Read</button>
+                          </div>
+                      </div>
+                  </div>
+                  <div class="announcement-card is-read">
+                      <div class="unread-dot"></div>
+                      <div class="history-icon icon-event">
+                          <i data-lucide="calendar"></i>
+                      </div>
+                      <div class="announcement-content">
+                          <div class="announcement-title">Diwali Celebration 2025</div>
+                          <div class="announcement-date">12 Nov 2025, 3:15 PM</div>
+                          <div class="announcement-body">
+                              <p>Get ready for a sparkling evening! The society is organizing a Diwali Mela on 18th Nov from 6:00 PM onwards in the central park. Join us for food, music, and fireworks.</p>
+                          </div>
+                          <div class="announcement-actions">
+                              <button class="btn-mark-read">Mark as Unread</button>
+                          </div>
+                      </div>
+                  </div>
+                  <div class="announcement-card is-read">
+                      <div class="unread-dot"></div>
+                      <div class="history-icon icon-info">
+                          <i data-lucide="droplet"></i>
+                      </div>
+                      <div class="announcement-content">
+                          <div class="announcement-title">Water Supply Update</div>
+                          <div class="announcement-date">11 Nov 2025, 9:00 AM</div>
+                          <div class="announcement-body">
+                              <p>Please note that the water supply will be suspended tomorrow (12th Nov) from 10:00 AM to 2:00 PM for mandatory tank cleaning. Kindly store water accordingly.</p>
+                          </div>
+                          <div class="announcement-actions">
+                              <button class="btn-mark-read">Mark as Unread</button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </main>
+  </div> 
+  
+  <div id="residents-chat-view" class="view-section">
+      <main class="page-main">
+          <div class="container">
+              <div class="page-header">
+                  <button class="icon-btn" onclick="showDashboardPage()" style="background: var(--glass); color: var(--dark); border: 1px solid var(--glass);">
+                       <i data-lucide="arrow-left"></i>
+                  </button>
+                  <div class="page-header-icon" style="background-color: var(--blue-bg); color: var(--blue);">
+                      <i data-lucide="message-square"></i>
+                  </div>
+                  <div>
+                      <h1 class="page-title">Residents Chat</h1>
+                      <p class="page-subtitle">Connect with your neighbors</p>
+                  </div>
+              </div>
+              
+              <div class="chat-list-container" id="chat-groups-list">
+                  <p style="text-align:center;color:#999;padding:20px;">Loading chat groups...</p>
+              </div>
+          </div>
+      </main>
+  </div> 
+  
+  <div id="individual-chat-view" class="view-section">
+      <div class="chat-view-header">
+          <button class="icon-btn" onclick="showResidentsChatPage()">
+               <i data-lucide="arrow-left"></i>
+          </button>
+          <div class="chat-icon" style="background-color: var(--blue-bg); color: var(--blue);">
+              <i data-lucide="gamepad-2"></i>
+          </div>
+          <h4 id="chatGroupName"></h4>
+      </div>
+      
+      <div class="chat-view-body">
+          <div class="chat-messages-container" id="chat-messages-container">
+              <p style="text-align:center;color:#999;padding:20px;">Loading messages...</p>
+          </div>
+      </div>
+      
+      <div class="chat-view-footer">
+          <input type="text" id="chatInput" class="form-input chat-input" placeholder="Type a message...">
+          <button class="btn-send" onclick="sendChatMessage()">
+              <i data-lucide="send"></i>
+          </button>
+      </div>
+  </div> 
+  
+  <div id="my-profile-view" class="view-section">
+      <main class="page-main">
+          <div class="container">
+              <div class="page-header">
+                  <button class="icon-btn" onclick="showDashboardPage()" style="background: var(--glass); color: var(--dark); border: 1px solid var(--glass);">
+                       <i data-lucide="arrow-left"></i>
+                  </button>
+                  <div class="page-header-icon" style="background-color: var(--green-bg); color: var(--brand);">
+                      <i data-lucide="user"></i>
+                  </div>
+                  <div>
+                      <h1 class="page-title">My Profile</h1>
+                      <p class="page-subtitle">View and edit your personal details</p>
+                  </div>
+              </div>
+              
+              <div class="page-card" style="text-align: center;">
+                  <div style="position: relative; width: 120px; margin: 0 auto;">
+                      <img id="resident-profile-pic" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3C/svg%3E" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; display: none;">
+                      <div id="resident-pic-placeholder" class="profile-pic-placeholder" style="width: 120px; height: 120px; font-size: 48px; margin-bottom: 16px;">P</div>
+                      <input type="file" id="resident-photo-input" accept="image/*" style="display: none;">
+                      <button type="button" class="profile-edit-btn" onclick="document.getElementById('resident-photo-input').click()">
+                          <i data-lucide="camera"></i>
+                      </button>
+                  </div>
+
+                  <div class="profile-bio-container" data-field-name="Bio">
+                      <div class="profile-bio-display">
+                          <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                              <h3 style="margin:0; font-size: 16px; color: var(--muted);">Your personal bio</h3>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark); width: 28px; height: 28px;">
+                                  <i data-lucide="edit-2" style="width: 16px; height: 16px;"></i>
+                              </button>
+                          </div>
+                          <p class="profile-detail-value" style="font-size: 15px; line-height: 1.5; margin-top: 8px;" data-original-value="(No description added. Click the edit icon to add one.)">
+                              (No description added. Click the edit icon to add one.)
+                          </p>
+                      </div>
+                      <div class="profile-bio-edit">
+                          <textarea class="form-input profile-edit-input" rows="3">(No description added. Click the edit icon to add one.)</textarea>
+                          <div style="display: flex; justify-content: center; gap: 8px;">
+                              <button class="btn-save" style="background: var(--brand); color: white; padding: 8px 16px; font-size: 14px; border-radius: 8px;">Save</button>
+                              <button class="btn-cancel" style="padding: 8px 16px; font-size: 14px; border-radius: 8px;">Cancel</button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <div class="page-card">
+                  <ul class="profile-details-list">
+                      
+                      <li class="profile-detail-item" data-field-name="Name">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info">
+                                  <span class="profile-detail-label">Name</span>
+                                  <span class="profile-detail-value" data-original-value="Prashant">Prashant</span>
+                              </div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <input type="text" class="profile-edit-input" value="Prashant">
+                              <div class="profile-edit-actions">
+                                  <button class="btn-save"><i data-lucide="check"></i></button>
+                                  <button class="btn-cancel"><i data-lucide="x"></i></button>
+                              </div>
+                          </div>
+                      </li>
+                      
+                      <li class="profile-detail-item" data-field-name="Email">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info">
+                                  <span class="profile-detail-label">Email</span>
+                                  <span class="profile-detail-value" data-original-value="prashant@example.com">prashant@example.com</span>
+                              </div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <input type="email" class="profile-edit-input" value="prashant@example.com">
+                              <div class="profile-edit-actions">
+                                  <button class="btn-save"><i data-lucide="check"></i></button>
+                                  <button class="btn-cancel"><i data-lucide="x"></i></button>
+                              </div>
+                          </div>
+                      </li>
+                      
+                      <li class="profile-detail-item" data-field-name="Phone No.">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info">
+                                  <span class="profile-detail-label">Phone No.</span>
+                                  <span class="profile-detail-value" data-original-value="+91 98765 43210">+91 98765 43210</span>
+                              </div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <input type="tel" class="profile-edit-input" value="+91 98765 43210">
+                              <div class="profile-edit-actions">
+                                  <button class="btn-save"><i data-lucide="check"></i></button>
+                                  <button class="btn-cancel"><i data-lucide="x"></i></button>
+                              </div>
+                          </div>
+                      </li>
+                      
+                      <li class="profile-detail-item" data-field-name="Gender">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info">
+                                  <span class="profile-detail-label">Gender</span>
+                                  <span class="profile-detail-value" data-original-value="Not set" style="color: var(--muted); font-style: italic;">Not set</span>
+                              </div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <select class="profile-edit-input">
+                                  <option value="Not set">Not set</option>
+                                  <option value="Male">Male</option>
+                                  <option value="Female">Female</option>
+                                  <option value="Other">Other</option>
+                              </select>
+                              <div class="profile-edit-actions">
+                                  <button class="btn-save"><i data-lucide="check"></i></button>
+                                  <button class="btn-cancel"><i data-lucide="x"></i></button>
+                              </div>
+                          </div>
+                      </li>
+
+                      <li class="profile-detail-item" data-field-name="Family Members">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info">
+                                  <span class="profile-detail-label">Family Members</span>
+                                  <div class="profile-detail-value" data-original-value="Priya (Wife), Aryan (Son)">
+                                      Priya (Wife), Aryan (Son)
+                                  </div>
+                              </div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <input type="text" class="profile-edit-input" value="Priya (Wife), Aryan (Son)" placeholder="Add names...">
+                              <div class="profile-edit-actions">
+                                  <button class="btn-save"><i data-lucide="check"></i></button>
+                                  <button class="btn-cancel"><i data-lucide="x"></i></button>
+                              </div>
+                          </div>
+                      </li>
+
+                      <li class="profile-detail-item" data-field-name="Vehicle">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info">
+                                  <span class="profile-detail-label">Vehicle Details</span>
+                                  <div class="profile-detail-value" data-original-value="Car - DL 3C AB 1234">
+                                      Car - DL 3C AB 1234
+                                  </div>
+                              </div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <div style="display:flex; gap:5px; flex:1;">
+                                  <select class="profile-edit-input" style="width:40%;">
+                                      <option value="Car">Car</option>
+                                      <option value="Bike">Bike</option>
+                                      <option value="Scooter">Scooter</option>
+                                  </select>
+                                  <input type="text" class="profile-edit-input" value="DL 3C AB 1234" placeholder="Number Plate">
+                              </div>
+                              <div class="profile-edit-actions">
+                                  <button class="btn-save"><i data-lucide="check"></i></button>
+                                  <button class="btn-cancel"><i data-lucide="x"></i></button>
+                              </div>
+                          </div>
+                      </li>
+                      
+                      <li class="profile-detail-item">
+                          <div class="profile-detail-info">
+                              <span class="profile-detail-label">Flat No.</span>
+                              <span class="profile-detail-value">Flat No 195</span>
+                          </div>
+                       </li>
+                  </ul>
+              </div>
+          </div>
+      </main>
+  </div>
+
+  <div id="past-activities-view" class="view-section">
+      <main class="page-main">
+          <div class="container">
+              <div class="page-header">
+                  <button class="icon-btn" onclick="showDashboardPage()" style="background: var(--glass); color: var(--dark); border: 1px solid var(--glass);">
+                       <i data-lucide="arrow-left"></i>
+                  </button>
+                  <div class="page-header-icon" style="background-color: var(--blue-bg); color: var(--blue);">
+                      <i data-lucide="history"></i>
+                  </div>
+                  <div>
+                      <h1 class="page-title">Past Activity</h1>
+                      <p class="page-subtitle">Your complete activity log</p>
+                  </div>
+              </div>
+
+              <h2 class="feed-title">All Activities</h2>
+
+              <div class="item-grid" id="past-activities-grid">
+                  <p style="text-align:center;color:#999;padding:20px;">Loading activities...</p>
+              </div>
+          </div>
+      </main>
+  </div> 
+  
+  <div id="info-view" class="view-section">
+      <main class="info-main">
+          <div class="info-container">
+              <div class="info-header">
+                  <h2 class="info-title" id="pageTitle">Page Title</h2>
+                  <div class="info-subtitle" id="pageSubtitle">Subtitle</div>
+              </div>
+              <div class="info-content" id="pageContent">
+                  </div>
+              <div style="margin-top: 30px;">
+                  <button class="btn-primary" onclick="showDashboardPage()">Back to Home</button>
+              </div>
+          </div>
+      </main>
+  </div> 
+
+  <div id="service-providers-view" class="view-section">
+      <main class="page-main">
+          <div class="container">
+              <div class="page-header">
+                  <button class="icon-btn" onclick="showDashboardPage()" style="background: var(--glass); color: var(--dark); border: 1px solid var(--glass);">
+                       <i data-lucide="arrow-left"></i>
+                  </button>
+                  <div class="page-header-icon" style="background-color: #e0f7fa; color: #006064;">
+                      <i data-lucide="briefcase"></i>
+                  </div>
+                  <div>
+                      <h1 class="page-title">Service Providers</h1>
+                      <p class="page-subtitle">Find help for your daily needs</p>
+                  </div>
+              </div>
+
+              <div class="filter-scroll-container">
+                  <button class="filter-pill active" onclick="filterServices('all')">All</button>
+                  <button class="filter-pill" onclick="filterServices('electrician')">Electrician</button>
+                  <button class="filter-pill" onclick="filterServices('plumber')">Plumber</button>
+                  <button class="filter-pill" onclick="filterServices('tutor')">Tutor</button>
+                  <button class="filter-pill" onclick="filterServices('cleaner')">Cleaner</button>
+                  <button class="filter-pill" onclick="filterServices('carpenter')">Carpenter</button>
+              </div>
+
+              <div class="service-list-grid">
+                  <div class="provider-card category-electrician">
+                      <div class="provider-body">
+                          <div class="provider-tag tag-blue">Electrician</div>
+                          <h3 class="provider-name">Raj Electronics</h3>
+                          <p class="provider-owner">Owner: Rajesh Gupta</p>
+                          <div class="provider-contact"><i data-lucide="phone"></i> +91 98765 11222</div>
+                      </div>
+                      <div class="provider-footer">
+                          <div class="provider-rating"><i data-lucide="star" fill="#ffc107" stroke="#ffc107"></i> 4.8</div>
+                          <button class="btn-assign" onclick="openAssignmentModal('Raj Electronics', 'Electrician')">Assign Work</button>
+                      </div>
+                  </div>
+                  <div class="provider-card category-plumber">
+                      <div class="provider-body">
+                          <div class="provider-tag tag-orange">Plumber</div>
+                          <h3 class="provider-name">Quick Plumb</h3>
+                          <p class="provider-owner">Owner: Anjali Verma</p>
+                          <div class="provider-contact"><i data-lucide="phone"></i> +91 98765 33444</div>
+                      </div>
+                      <div class="provider-footer">
+                          <div class="provider-rating"><i data-lucide="star" fill="#ffc107" stroke="#ffc107"></i> 4.5</div>
+                          <button class="btn-assign" onclick="openAssignmentModal('Quick Plumb', 'Plumber')">Assign Work</button>
+                      </div>
+                  </div>
+                  <div class="provider-card category-tutor">
+                      <div class="provider-body">
+                          <div class="provider-tag tag-purple">Tutor</div>
+                          <h3 class="provider-name">Saraswati Classes</h3>
+                          <p class="provider-owner">Maths & Science (6th-10th)</p>
+                          <div class="provider-contact"><i data-lucide="phone"></i> +91 99999 88888</div>
+                      </div>
+                      <div class="provider-footer">
+                          <div class="provider-rating"><i data-lucide="star" fill="#ffc107" stroke="#ffc107"></i> 5.0</div>
+                          <button class="btn-assign" onclick="openAssignmentModal('Saraswati Classes', 'Tutor')">Assign Work</button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </main>
+  </div>
+  
+  {% include '_footer.html' %}
+
+  <div id="assignment-modal" class="modal-overlay">
+      <div class="modal-box">
+          <div class="modal-header">
+              <h3>Assign Task</h3>
+              <button class="icon-btn" onclick="closeAssignmentModal()"><i data-lucide="x"></i></button>
+          </div>
+          <div class="modal-body">
+              <p style="margin-bottom:10px;">Select a <strong>Private Request</strong> to assign to <span id="modal-provider-name" style="color:#00b67a; font-weight:bold;"></span>:</p>
+              <div id="modal-request-list" class="modal-list">
+                  </div>
+              <div id="empty-state-msg" style="display:none; text-align:center; color:#666; padding:10px;">
+                  No private requests found. Please create one first.
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button class="btn-cancel" onclick="closeAssignmentModal()">Cancel</button>
+              <button class="btn-save" onclick="confirmAssignment()">Confirm</button>
+          </div>
+      </div>
+  </div>
+  
+</div> 
+</body>
+</html>

@@ -1,0 +1,667 @@
+<!-- Paste your Guard Dashboard HTML here -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upavan Apartment - Guard Dashboard</title>
+    
+    <link rel="stylesheet" href="/static/guard_dashboard.css">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script src="/static/guard_dashboard.js" defer></script>
+</head>
+<body>
+<script>
+    window.currentUserId = {{ current_user_id|tojson }};
+</script>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<nav class="sidebar-nav" id="sidebar-nav">
+    <div class="sidebar-profile">
+        <div class="profile-pic-placeholder" style="background-color: var(--blue);">{{ user.full_name[0].upper() }}</div>
+        <h4 class="profile-name">{{ user.full_name }}</h4>
+        <p class="profile-flat">Guard</p>
+        <a onclick="showMyProfilePage()" class="btn-sidebar btn-view-profile">View Profile</a>
+    </div>
+    <div class="sidebar-links">
+        <a onclick="showGuardDashboardPage()" class="btn-sidebar">Dashboard</a>
+        <a onclick="showVisitorLogPage()" class="btn-sidebar">Visitor Log</a>
+        <a onclick="showGateStatusPage()" class="btn-sidebar">Gate Status</a>
+        <a onclick="showMaintVisitorsPage()" class="btn-sidebar">Maint. Visitors</a>
+        <a onclick="showShiftReportPage()" class="btn-sidebar">Shift Report</a>
+        <a onclick="showResidentsPage()" class="btn-sidebar">Residents</a>
+    </div>
+    <div class="sidebar-footer">
+        <a href="#" class="btn-sidebar btn-logout">
+            <i data-lucide="log-out"></i>
+            <span>Log Out</span>
+        </a>
+    </div>
+</nav>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<div class="notification-overlay" id="notificationOverlay"></div>
+<aside class="notification-panel" id="notificationPanel">
+    <div class="notification-header">
+        <h3>Notifications</h3>
+        <button class="icon-btn" style="color: var(--dark);" onclick="toggleNotifications()">
+            <i data-lucide="x"></i>
+        </button>
+    </div>
+    <div class="notification-panel-body">
+        <ul class="notification-list" id="guard-notification-list">
+        </ul>
+        <div style="padding: 20px; text-align: center; color: #999;">
+            <p>No notifications yet</p>
+        </div>
+    </div>
+</aside>
+<div class="site">
+  
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" onclick="showGuardDashboardPage()" style="text-decoration:none;">
+        <img src="https://i.ibb.co/gMrgR5tG/1763226137808-modified.png" alt="Urvoic Logo" class="brand-image" />
+        <span class="brand-name">Urvoic</span>
+      </a>
+      <div class="header-actions">
+        <button class="icon-btn" aria-label="Search" onclick="focusSearch()"> <i data-lucide="search"></i> </button>
+        <button class="icon-btn" aria-label="Notifications" onclick="toggleNotifications()"> <i data-lucide="bell"></i> </button>
+        <button class="icon-btn" id="hamburger-btn" aria-label="Open menu">
+            <i data-lucide="menu" class="icon-menu"></i>
+            <i data-lucide="x" class="icon-close"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div id="guard-dashboard-view" class="view-section active-view">
+      <main class="hero">
+        <div class="hero-inner">
+          <h1 class="hero-title">{{ user.society_name }}</h1>
+          <p class="hero-sub">Welcome back {{ user.full_name }}!</p> 
+          <div class="search-row">
+            <input id="heroSearchInput" class="search-input" placeholder="Search Visitors, Residents, Reports..." aria-label="Search" />
+            <button class="search-btn" aria-label="search-button" onclick="handleSearch()">
+              <i data-lucide="search" style="width: 18px; height: 18px;"></i>
+            </button>
+          </div>
+        </div>
+      </main>
+      
+      <section class="services-section">
+        <div class="container">
+          <h3 class="section-title">Society is in your hands now!</h3>
+          <div class="services-grid">
+            
+            <div class="service-card" onclick="showVisitorLogPage()">
+              <div class="service-icon">
+                <i data-lucide="door-open" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i>
+              </div>
+              <div class="service-label">Visitor Log</div>
+            </div>
+            
+            <div class="service-card" onclick="showGateStatusPage()">
+              <div class="service-icon">
+                <i data-lucide="shield-check" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i>
+              </div>
+              <div class="service-label">Gate status</div>
+            </div>
+    
+            <div class="service-card" onclick="showMaintVisitorsPage()">
+              <div class="service-icon">
+                <i data-lucide="hard-hat" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i>
+              </div>
+              <div class="service-label">Maint. Visitors</div>
+            </div>
+    
+            <div class="service-card" onclick="showShiftReportPage()">
+              <div class="service-icon">
+                <i data-lucide="clipboard-list" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i>
+              </div>
+              <div class="service-label">Shift Report</div>
+            </div>
+            
+            <div class="service-card" onclick="showResidentsPage()">
+              <div class="service-icon">
+                <i data-lucide="book-user" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i>
+              </div>
+              <div class="service-label">Residents</div>
+            </div>
+            
+          </div>
+        </div>
+      </section>
+
+      <section class="signup-options">
+        <div class="footer-inner container signup-inner">
+            <h4>Recent Gate Activities</h4>
+            <p class="signup-subtext">A log of recent actions at the gate.</p>
+            
+            <div class="activity-grid-wrapper">
+                
+                <div class="activity-card activity-left" style="width: 100%; max-width: 500px; margin: 0 auto;">
+                    <h5 class="activity-title">Visitor Log</h5>
+                    <ul class="activity-list" id="guard-activity-list">
+                        <li style="text-align:center;color:#999;">Loading activities...</li>
+                    </ul>
+                </div>
+    
+                </div>
+        </div>
+      </section>
+      
+      <section class="we-are-section">
+          <div class="container">
+              <div class="we-are-inner we-are-grid">
+                  
+                  <div class="we-are-left">
+                      <h4 class="we-are-title">We're Urvoic</h4>
+                      <img src="https://i.ibb.co/JwfKGWwJ/IMG-20251110-220238.jpg" alt="Horizontal community illustration" class="we-are-image" />
+                      
+                      <div class="mission-box">
+                          <h5 class="mission-title">Our Mission</h5>
+                          <p class="we-are-sub">A community based Society platform. A platform where people living in the same society can Connect, Communicate, Solve problems &amp; make better choices together.</p>
+                      </div>
+                  </div>
+                  
+                  <div class="we-are-right">
+                      
+                      <div class="rating-box">
+                          <h5 class="rating-title">Your satisfaction is our success</h5>
+                          <div class="star-rating-icons" id="urvoic-rating">
+                              <i data-lucide="star" data-rating="1"></i>
+                              <i data-lucide="star" data-rating="2"></i>
+                              <i data-lucide="star" data-rating="3"></i>
+                              <i data-lucide="star" data-rating="4"></i>
+                              <i data-lucide="star" data-rating="5"></i>
+                          </div>
+                          <p id="rating-message" class="rating-message-text">Click a star to rate us!</p>
+                      </div>
+                      
+                      </div>
+              </div>
+          </div>
+      </section>
+  </div>
+  
+  <div id="visitor-log-view" class="view-section">
+      <main class="page-main">
+        <div class="container">
+            <div class="page-header">
+                <button class="icon-btn" onclick="showGuardDashboardPage()"><i data-lucide="arrow-left"></i></button>
+                <div class="page-header-icon" style="background-color: var(--blue-bg); color: var(--blue);"><i data-lucide="door-open"></i></div>
+                <div><h1 class="page-title">Visitor Log</h1><p class="page-subtitle">Request permission for visitor entry</p></div>
+            </div>
+            
+            <div class="page-card" style="background: var(--dashboard-bg);">
+                <form id="check-in-form">
+                    <h3 style="margin-top:0;">Visitor Entry Form</h3>
+                    <div class="form-group">
+                        <label for="visitor-name">Visitor Name</label>
+                        <input type="text" id="visitor-name" class="form-input" placeholder="e.g., Rohan Sharma" required>
+                    </div>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="visitor-mobile">Mobile Number</label>
+                            <input type="tel" id="visitor-mobile" class="form-input" placeholder="10-digit number" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="visitor-flat">Flat No.</label>
+                            <input type="text" id="visitor-flat" class="form-input" placeholder="e.g., A-101" required>
+                        </div>
+                    </div>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="visitor-purpose">Purpose</label>
+                            <select id="visitor-purpose" class="form-input" required>
+                                <option value="">Select purpose...</option>
+                                <option value="Guest">Guest</option>
+                                <option value="Delivery">Delivery</option>
+                                <option value="Service">Service</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="visitor-vehicle">Vehicle No. (Optional)</label>
+                            <input type="text" id="visitor-vehicle" class="form-input" placeholder="e.g., DL10CA1234">
+                        </div>
+                    </div>
+                    <button type="submit" class="form-submit-btn" style="background: var(--dark-green-bg);">
+                        <i data-lucide="send" style="width: 18px; margin-right: 8px;"></i>
+                        Ask Permission
+                    </button>
+                </form>
+            </div>
+            
+            <h2 class="feed-title">Pending Permissions</h2>
+            <div class="member-list" id="pending-permissions-list">
+                <p style="text-align:center;color:#999;padding:20px;">Loading pending permissions...</p>
+            </div>
+
+            <h2 class="feed-title">Recent Visitor History</h2>
+            <div class="member-list" id="admin-visitor-log-list">
+                <p style="text-align:center;color:#999;padding:20px;">Loading visitor history...</p>
+            </div>
+        </div>
+      </main>
+  </div>
+
+
+  <div id="gate-status-view" class="view-section">
+      <main class="page-main">
+        <div class="container">
+            <div class="page-header">
+                <button class="icon-btn" onclick="showGuardDashboardPage()"><i data-lucide="arrow-left"></i></button>
+                <div class="page-header-icon" style="background-color: var(--blue-bg); color: var(--blue);"><i data-lucide="shield-check"></i></div>
+                <div><h1 class="page-title">Gate Status</h1><p class="page-subtitle">Live status of visitors and gates</p></div>
+            </div>
+            
+            <div style="max-width: 1100px; margin: 0 auto 24px;">
+                <button class="form-submit-btn scan-qr-btn" style="background: var(--dark-green-bg); max-width: 250px;" onclick="scanQRCode()">
+                    <i data-lucide="qr-code" style="width: 18px; margin-right: 8px;"></i>
+                    Scan Visitor QR
+                </button>
+            </div>
+
+            <div class="page-card">
+                <h3 style="margin-top:0;">Visitors Currently Inside <span class="visitor-count-badge">2</span></h3>
+                <div class="member-list">
+                    <div class="member-list-item">
+                        <div class="profile-pic-placeholder-sm" style="background-color: #eaf2ff;"><i data-lucide="user"></i></div>
+                        <div class="member-info"><div class="member-name">Rahul Sharma</div><div class="member-detail">To: A-501</div></div>
+                        <div class="member-actions"><button class="btn-exit" onclick="markVisitorExit(this)">Mark Exit</button></div>
+                    </div>
+                     <div class="member-list-item">
+                        <div class="profile-pic-placeholder-sm" style="background-color: #fff4e6;"><i data-lucide="truck"></i></div>
+                        <div class="member-info"><div class="member-name">Delivery: Zepto</div><div class="member-detail">To: B-104</div></div>
+                        <div class="member-actions"><button class="btn-exit" onclick="markVisitorExit(this)">Mark Exit</button></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="page-card">
+                <h3 style="margin-top:0;">Expected Visitors Today</h3>
+                <div class="member-list">
+                    <div class="member-list-item">
+                        <div class="profile-pic-placeholder-sm" style="background-color: #eaf2ff;"><i data-lucide="user-check"></i></div>
+                        <div class="member-info">
+                            <div class="member-name">Pranav</div>
+                            <div class="member-detail">To: A-201</div>
+                        </div>
+                        <div class="member-actions"><span class="expected-visitor-purpose">Guest</span></div>
+                    </div>
+                    <div class="member-list-item">
+                        <div class="profile-pic-placeholder-sm" style="background-color: #e5f6e8;"><i data-lucide="hard-hat"></i></div>
+                        <div class="member-info">
+                            <div class="member-name">Sunita</div>
+                            <div class="member-detail">To: B-402</div>
+                        </div>
+                        <div class="member-actions"><span class="expected-visitor-purpose">Maid</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page-card">
+                <h3 style="margin-top:0;">Gate Operations</h3>
+                <ul class="profile-details-list">
+                      <li class="profile-detail-item">
+                          <div class="profile-detail-info"><span class="profile-detail-label">Gate A (Main)</span><span class="profile-detail-value">Open</span></div>
+                          <span class="gate-status-badge status-open">Open</span>
+                      </li>
+                      <li class="profile-detail-item">
+                          <div class="profile-detail-info"><span class="profile-detail-label">Gate B (Service)</span><span class="profile-detail-value">Closed (Waterlogging)</span></div>
+                          <span class="gate-status-badge status-closed">Closed</span>
+                      </li>
+                </ul>
+            </div>
+        </div>
+      </main>
+  </div>
+  
+  <div id="maint-visitors-view" class="view-section">
+      <main class="page-main">
+        <div class="container">
+            <div class="page-header">
+                <button class="icon-btn" onclick="showGuardDashboardPage()"><i data-lucide="arrow-left"></i></button>
+                <div class="page-header-icon" style="background-color: var(--blue-bg); color: var(--blue);"><i data-lucide="hard-hat"></i></div>
+                <div><h1 class="page-title">Maintenance & Services</h1><p class="page-subtitle">Verify scheduled staff, services, and deliveries</p></div>
+            </div>
+            
+            <div class="page-card">
+                <h3 style="margin-top:0;">Today's Scheduled Services</h3>
+                <p class="page-subtitle" style="margin: -16px 0 24px 0; font-size: 15px;">Verify resident-booked services (Plumbers, AC Repair, etc.)</p>
+                
+                <div class="member-list" id="scheduled-services-list">
+                    
+                    <div class="member-list-item" data-name="QuickFix Plumbers" data-detail="For: A-101 • Staff: Ramesh Kumar" data-icon="tool">
+                        <div class="profile-pic-placeholder-sm" style="background-color: var(--yellow-bg-light);"><i data-lucide="tool"></i></div>
+                        <div class="member-info">
+                            <div class="member-name">QuickFix Plumbers</div>
+                            <div class="member-detail">For: **A-101** • Staff: Ramesh Kumar</div>
+                        </div>
+                        <div class="member-actions">
+                            <button class="btn-approve btn-check-in">
+                                <i data-lucide="log-in" style="width: 16px; margin-right: 6px;"></i>
+                                Check-In
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="member-list-item" data-name="Urban Company" data-detail="For: B-504 • Staff: 2 (unnamed)" data-icon="wind">
+                        <div class="profile-pic-placeholder-sm" style="background-color: var(--blue-bg);"><i data-lucide="wind"></i></div>
+                        <div class="member-info">
+                            <div class="member-name">Urban Company</div>
+                            <div class="member-detail">For: **B-504** • Staff: 2 (unnamed)</div>
+                        </div>
+                        <div class="member-actions">
+                            <button class="btn-approve btn-check-in">
+                                <i data-lucide="log-in" style="width: 16px; margin-right: 6px;"></i>
+                                Check-In
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="member-list-item" data-name="Society Gardener" data-detail="For: Common Area • Staff: Ram Lal" data-icon="leaf">
+                        <div class="profile-pic-placeholder-sm" style="background-color: var(--green-bg);"><i data-lucide="leaf"></i></div>
+                        <div class="member-info">
+                            <div class="member-name">Society Gardener</div>
+                            <div class="member-detail">For: **Common Area** • Staff: Ram Lal</div>
+                        </div>
+                        <div class="member-actions">
+                            <button class="btn-approve btn-check-in">
+                                <i data-lucide="log-in" style="width: 16px; margin-right: 6px;"></i>
+                                Check-In
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            
+            <div class="page-card">
+                <h3 style="margin-top:0;">Today's Expected Businesses</h3>
+                <p class="page-subtitle" style="margin: -16px 0 24px 0; font-size: 15px;">Verify 1-Day Pass vendors (Marketing, Society Events, etc.)</p>
+                
+                <div class="member-list" id="expected-businesses-list">
+                    
+                    <div class="member-list-item" data-name="Zepto (Marketing)" data-detail="Staff: Arun • Purpose: Marketing" data-icon="briefcase">
+                        <div class="profile-pic-placeholder-sm" style="background-color: var(--orange-bg);"><i data-lucide="briefcase"></i></div>
+                        <div class="member-info">
+                            <div class="member-name">Zepto</div>
+                            <div class="member-detail">Staff: **Arun** • Purpose: Marketing (1 Day Pass)</div>
+                        </div>
+                        <div class="member-actions">
+                            <button class="btn-approve btn-check-in">
+                                <i data-lucide="log-in" style="width: 16px; margin-right: 6px;"></i>
+                                Check-In
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="member-list-item" data-name="Star Events" data-detail="Staff: 3 (Team) • Purpose: Diwali Event Setup" data-icon="award">
+                        <div class="profile-pic-placeholder-sm" style="background-color: var(--darker-pink-bg);"><i data-lucide="award"></i></div>
+                        <div class="member-info">
+                            <div class="member-name">Star Events</div>
+                            <div class="member-detail">Staff: **3 (Team)** • Purpose: Diwali Event Setup</div>
+                        </div>
+                        <div class="member-actions">
+                            <button class="btn-approve btn-check-in">
+                                <i data-lucide="log-in" style="width: 16px; margin-right: 6px;"></i>
+                                Check-In
+                            </button>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+
+            <div class="page-card">
+                <h3 style="margin-top:0;">Staff Currently Inside</h3>
+                <div class="member-list" id="maint-inside-list">
+                    </div>
+            </div>
+
+        </div>
+      </main>
+  </div>
+  <div id="shift-report-view" class="view-section">
+      <main class="page-main">
+        <div class="container">
+            <div class="page-header">
+                <button class="icon-btn" onclick="showGuardDashboardPage()"><i data-lucide="arrow-left"></i></button>
+                <div class="page-header-icon" style="background-color: var(--blue-bg); color: var(--blue);"><i data-lucide="clipboard-list"></i></div>
+                <div><h1 class="page-title">Shift Report</h1><p class="page-subtitle">Submit your end-of-shift report</p></div>
+            </div>
+            
+            <form id="shift-report-form" onsubmit="event.preventDefault(); showToast('Shift Report Submitted!', 'success');">
+                <div class="page-card">
+                    <h3 style="margin-top:0;">A. Shift Details</h3>
+                    <ul class="profile-details-list">
+                        <li class="profile-detail-item">
+                            <div class="profile-detail-info"><span class="profile-detail-label">Guard Name</span><span class="profile-detail-value">Shyam</span></div>
+                        </li>
+                        <li class="profile-detail-item">
+                            <div class="profile-detail-info" style="width: 100%;">
+                                <label for="shift-type" class="profile-detail-label">Shift Type</label>
+                                <select id="shift-type" class="form-input" style="margin-bottom: 0; max-width: 200px;">
+                                    <option value="Morning">Morning (6 AM - 2 PM)</option>
+                                    <option value="Afternoon">Afternoon (2 PM - 10 PM)</option>
+                                    <option value="Night">Night (10 PM - 6 AM)</option>
+                                </select>
+                            </div>
+                        </li>
+                        <li class="profile-detail-item">
+                            <div class="profile-detail-info" style="width: 100%;">
+                                <label for="shift-start" class="profile-detail-label">Shift Start Time</label>
+                                <input type="datetime-local" id="shift-start" class="form-input" style="margin-bottom: 0;" required>
+                            </div>
+                        </li>
+                        <li class="profile-detail-item">
+                            <div class="profile-detail-info" style="width: 100%;">
+                                <label for="shift-end" class="profile-detail-label">Shift End Time</label>
+                                <input type="datetime-local" id="shift-end" class="form-input" style="margin-bottom: 0;" required>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="page-card">
+                    <h3 style="margin-top:0;">B. Visitor Summary (Auto-Calculated)</h3>
+                    <ul class="profile-details-list">
+                        <li class="profile-detail-item">
+                            <div class="profile-detail-info"><span class="profile-detail-label">Total Visitors Entered</span><span class="profile-detail-value">25</span></div>
+                        </li>
+                        <li class="profile-detail-item">
+                            <div class="profile-detail-info"><span class="profile-detail-label">Total Visitors Left</span><span class="profile-detail-value">23</span></div>
+                        </li>
+                        <li class="profile-detail-item">
+                            <div class="profile-detail-info"><span class="profile-detail-label">Visitors Still Inside</span><span class="profile-detail-value" style="color: var(--pending-red);">2</span></div>
+                        </li>
+                        <li class="profile-detail-item">
+                            <div class="profile-detail-info"><span class="profile-detail-label">Maintenance Visitors Today</span><span class="profile-detail-value">3</span></div>
+                        </li>
+                        <li class="profile-detail-item">
+                            <div class="profile-detail-info"><span class="profile-detail-label">Delivery Visitors Today</span><span class="profile-detail-value">12</span></div>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="page-card">
+                    <h3 style="margin-top:0;">C. Gate Events / Notes</h3>
+                    <div class="form-group">
+                        <label for="gate-status-notes">Gate Status (Open/Closed, Reasons)</label>
+                        <textarea id="gate-status-notes" class="form-input" rows="3" placeholder="e.g., Gate B was closed from 2 PM to 3 PM for water tanker entry."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="shift-notes">Other Shift Notes</label>
+                        <textarea id="shift-notes" class="form-input" rows="4" placeholder="e.g., Resident in A-101 reported noise..."></textarea>
+                    </div>
+                </div>
+                
+                <div style="max-width: 1100px; margin: 0 auto 32px;">
+                    <button type="submit" class="form-submit-btn" style="background: var(--dark-green-bg);">
+                        <i data-lucide="send" style="width: 18px; margin-right: 8px;"></i>
+                        Submit Shift Report
+                    </button>
+                </div>
+            </form>
+
+        </div>
+      </main>
+  </div>
+  
+  <div id="residents-view" class="view-section">
+      <main class="page-main">
+        <div class="container">
+            <div class="page-header">
+                <button class="icon-btn" onclick="showGuardDashboardPage()"><i data-lucide="arrow-left"></i></button>
+                <div class="page-header-icon" style="background-color: var(--blue-bg); color: var(--blue);"><i data-lucide="book-user"></i></div>
+                <div><h1 class="page-title">Residents</h1><p class="page-subtitle">View resident directory and manage in/out status</p></div>
+            </div>
+            
+            <div class="search-row" style="margin: 0 auto 24px; max-width: 1100px;">
+                <input class="search-input" placeholder="Search by Name / Flat No / Phone..." id="resident-search-input" />
+            </div>
+
+            <div class="resident-card-list" id="resident-directory-list">
+                <p style="text-align:center;color:#999;padding:20px;">Loading residents...</p>
+            </div>
+            
+            <p id="no-resident-found" style="text-align: center; display: none; color: var(--muted);">No residents found matching your search.</p>
+
+        </div>
+      </main>
+  </div>
+  
+  
+  <div id="my-profile-view" class="view-section">
+      <main class="page-main">
+          <div class="container" style="max-width: 700px;">
+              <div class="page-header">
+                  <button class="icon-btn" onclick="showGuardDashboardPage()">
+                       <i data-lucide="arrow-left"></i>
+                  </button>
+                  <div class="page-header-icon" style="background-color: var(--green-bg); color: var(--brand);">
+                      <i data-lucide="user"></i>
+                  </div>
+                  <div>
+                      <h1 class="page-title">My Profile</h1>
+                      <p class="page-subtitle">View and edit your personal details</p>
+                  </div>
+              </div>
+              
+              <div class="page-card" style="text-align: center;">
+                  <div style="position: relative; width: 120px; margin: 0 auto;">
+                      <img id="guard-profile-pic" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3C/svg%3E" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; display: none;">
+                      <div id="guard-pic-placeholder" class="profile-pic-placeholder" style="width: 120px; height: 120px; font-size: 48px; margin-bottom: 16px; background-color: var(--blue); color: white;">S</div>
+                      <input type="file" id="guard-photo-input" accept="image/*" style="display: none;">
+                      <button type="button" class="profile-edit-btn" onclick="document.getElementById('guard-photo-input').click()">
+                          <i data-lucide="camera"></i>
+                      </button>
+                  </div>
+                  <div class="profile-bio-container" data-field-name="Bio">
+                      <div class="profile-bio-display">
+                          <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                              <h3 style="margin:0; font-size: 16px; color: var(--muted);">Your personal bio</h3>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark); width: 28px; height: 28px;"><i data-lucide="edit-2" style="width: 16px; height: 16px;"></i></button>
+                          </div>
+                          <p class="profile-detail-value" style="font-size: 15px; line-height: 1.5; margin-top: 8px;" data-original-value="(No description added. Click the edit icon to add one.)">
+                              (No description added. Click the edit icon to add one.)
+                          </p>
+                      </div>
+                      <div class="profile-bio-edit">
+                          <textarea class="form-input profile-edit-input" rows="3">(No description added. Click the edit icon to add one.)</textarea>
+                          <div style="display: flex; justify-content: center; gap: 8px;">
+                              <button class="btn-save" style="background: var(--brand); color: white; padding: 8px 16px; font-size: 14px; border-radius: 8px;">Save</button>
+                              <button class="btn-cancel" style="padding: 8px 16px; font-size: 14px; border-radius: 8px;">Cancel</button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <div class="page-card">
+                  <ul class="profile-details-list">
+                      <li class="profile-detail-item" data-field-name="Name">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info"><span class="profile-detail-label">Name</span><span class="profile-detail-value" data-original-value="Shyam">Shyam</span></div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <input type="text" class="profile-edit-input" value="Shyam">
+                              <div class="profile-edit-actions"><button class="btn-save"><i data-lucide="check"></i></button><button class="btn-cancel"><i data-lucide="x"></i></button></div>
+                          </div>
+                      </li>
+                      <li class="profile-detail-item" data-field-name="Phone No.">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info"><span class="profile-detail-label">Phone No.</span><span class="profile-detail-value" data-original-value="+91 98765 11111">+91 98765 11111</span></div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <input type="tel" class="profile-edit-input" value="+91 98765 11111">
+                              <div class="profile-edit-actions"><button class="btn-save"><i data-lucide="check"></i></button><button class="btn-cancel"><i data-lucide="x"></i></button></div>
+                          </div>
+                      </li>
+                      <li class="profile-detail-item">
+                          <div class="profile-detail-info"><span class="profile-detail-label">Role</span><span class="profile-detail-value">Guard</span></div>
+                      </li>
+                      <li class="profile-detail-item" data-field-name="Assigned Gate">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info">
+                                  <span class="profile-detail-label">Assigned Gate</span>
+                                  <span class="profile-detail-value" data-original-value="Gate A">Gate A</span>
+                              </div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <select class="profile-edit-input">
+                                  <option value="Gate A">Gate A</option>
+                                  <option value="Gate B">Gate B</option>
+                                  <option value="Main Office">Main Office</option>
+                              </select>
+                              <div class="profile-edit-actions">
+                                  <button class="btn-save"><i data-lucide="check"></i></button>
+                                  <button class="btn-cancel"><i data-lucide="x"></i></button>
+                              </div>
+                          </div>
+                      </li>
+                  </ul>
+              </div>
+          </div>
+      </main>
+  </div>
+
+  
+  <div id="info-view" class="view-section">
+      <main class="info-main">
+          <div class="info-container">
+              <div class="info-header"><h2 class="info-title" id="pageTitle">Page Title</h2><div class="info-subtitle" id="pageSubtitle">Subtitle</div></div>
+              <div class="info-content" id="pageContent"></div>
+              <div style="margin-top: 30px;"><button class="btn-primary" onclick="showGuardDashboardPage()">Back to Home</button></div>
+          </div>
+      </main>
+  </div>
+
+
+  {% include '_footer.html' %}
+</div>
+
+<div id="qr-scan-modal" class="modal-overlay">
+    <div class="modal-content" style="text-align: center;">
+        <h3>Scan Visitor QR Code</h3>
+        <p>Hold the visitor's QR code up to the camera.</p>
+        <div class="qr-scanner-placeholder">
+            <i data-lucide="scan-line" style="width: 100px; height: 100px; color: var(--muted);"></i>
+        </div>
+        <p class="text-secondary" style="font-size: 14px;">(Scanning simulation...)</p>
+        <div class="form-button-row">
+            <button class="btn-cancel" id="cancel-qr-btn">Cancel</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

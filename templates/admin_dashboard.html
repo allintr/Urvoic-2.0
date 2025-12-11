@@ -1,0 +1,653 @@
+<!-- Paste your Admin Dashboard HTML here -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upavan Apartment - Admin Dashboard</title>
+    <link rel="stylesheet" href="/static/admin_dashboard.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="/static/admin_dashboard.js" defer></script>
+</head>
+<body>
+<script>
+    window.currentUserId = {{ current_user_id|tojson }};
+</script>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<nav class="sidebar-nav" id="sidebar-nav">
+    <div class="sidebar-profile">
+        <div class="profile-pic-placeholder">{{ user.full_name[0].upper() }}</div>
+        <h4 class="profile-name">{{ user.full_name }}</h4>
+        <p class="profile-flat">{{ user.society_name }}</p>
+        <a onclick="showMyProfilePage()" class="btn-sidebar btn-view-profile">View Profile</a>
+    </div>
+    <div class="sidebar-links">
+        <a onclick="showAdminDashboardPage()" class="btn-sidebar">Dashboard</a>
+        <a onclick="showManageMembersPage()" class="btn-sidebar">Manage Members</a>
+        <a onclick="showAnnouncementPage()" class="btn-sidebar">Announcements</a>
+        <a onclick="showMaintenancePage()" class="btn-sidebar">Maintenance</a>
+        <a onclick="showVisitorLogPage()" class="btn-sidebar">Visitor Log</a>
+        <a onclick="showPaymentsPage()" class="btn-sidebar">Payments</a>
+        <a onclick="showResidentsChatPage()" class="btn-sidebar">Residents Chat</a>
+    </div>
+    <div class="sidebar-footer">
+        <a href="#" class="btn-sidebar btn-logout">
+            <i data-lucide="log-out"></i>
+            <span>Log Out</span>
+        </a>
+    </div>
+</nav>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<div class="notification-overlay" id="notificationOverlay"></div>
+<aside class="notification-panel" id="notificationPanel">
+    <div class="notification-header">
+        <h3>Notifications</h3>
+        <button class="icon-btn" style="color: var(--dark);" onclick="toggleNotifications()">
+            <i data-lucide="x"></i>
+        </button>
+    </div>
+    <div class="notification-panel-body">
+        <ul class="notification-list" id="admin-notification-list">
+        </ul>
+        <div style="padding: 20px; text-align: center; color: #999;">
+            <p>No notifications yet</p>
+        </div>
+    </div>
+</aside>
+
+<div class="site">
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" onclick="showAdminDashboardPage()" style="text-decoration:none;">
+        <img src="https://i.ibb.co/gMrgR5tG/1763226137808-modified.png" alt="Urvoic Logo" class="brand-image" />
+        <span class="brand-name">Urvoic</span>
+      </a>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="focusSearch()"> <i data-lucide="search"></i> </button>
+        <button class="icon-btn" onclick="toggleNotifications()"> <i data-lucide="bell"></i> </button>
+        <button class="icon-btn" id="hamburger-btn">
+            <i data-lucide="menu" class="icon-menu"></i>
+            <i data-lucide="x" class="icon-close"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div id="admin-dashboard-view" class="view-section active-view">
+      <main class="hero">
+        <div class="hero-inner">
+          <h1 class="hero-title">{{ user.society_name }}</h1>
+          <p class="hero-sub">Welcome back {{ user.full_name }}!</p> 
+          <div class="search-row">
+            <input id="heroSearchInput" class="search-input" placeholder="Search..." />
+            <button class="search-btn" onclick="handleSearch()">
+              <i data-lucide="search" style="width: 18px; height: 18px;"></i>
+            </button>
+          </div>
+        </div>
+      </main>
+      
+      <section class="dashboard-section">
+        <div class="container">
+            <h3 class="section-title" style="text-align: left; margin-bottom: 20px; font-size: 20px;">Dashboard</h3>
+            <div class="dashboard-grid">
+                <div class="dashboard-card" onclick="showManageMembersPage('residents')">
+                    <div class="dashboard-icon"><p class="dashboard-value" id="resident-count">0</p><div class="icon-bg bg-blue-light"><i data-lucide="users" class="text-blue" width="24" height="24"></i></div></div><p class="dashboard-title">Residents</p>
+                </div>
+                <div class="dashboard-card" onclick="showMaintenancePage('pending')">
+                    <div class="dashboard-icon"><p class="dashboard-value" id="pending-requests">0</p><div class="icon-bg bg-red-light"><i data-lucide="bell-ring" class="text-red" width="24" height="24"></i></div></div><p class="dashboard-title">Requests Pending</p>
+                </div>
+                <div class="dashboard-card" onclick="showVisitorLogPage()">
+                    <div class="dashboard-icon"><p class="dashboard-value" id="visitors-count">0</p><div class="icon-bg bg-yellow-light"><i data-lucide="car" class="text-yellow" width="24" height="24"></i></div></div><p class="dashboard-title">Visitors Today</p>
+                </div>
+                <div class="dashboard-card" onclick="showPaymentsPage()">
+                    <div class="dashboard-icon"><p class="dashboard-value" id="dues-collected">₹0</p><div class="icon-bg bg-green-light"><i data-lucide="wallet" class="text-green" width="24" height="24"></i></div></div><p class="dashboard-title">Dues Collected</p>
+                </div>
+            </div>
+        </div>
+      </section>
+
+      <section class="services-section">
+        <div class="container">
+          <h3 class="section-title">Society is in your hands now!</h3>
+          <div class="services-grid">
+            <div class="service-card" onclick="showAnnouncementPage()">
+              <div class="service-icon"><i data-lucide="megaphone" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i></div>
+              <div class="service-label">Announcement</div>
+            </div>
+            <div class="service-card" onclick="showManageMembersPage()">
+              <div class="service-icon"><i data-lucide="users" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i></div>
+              <div class="service-label">Manage Members</div>
+            </div>
+            <div class="service-card" onclick="showMaintenancePage()">
+              <div class="service-icon"><i data-lucide="wrench" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i></div>
+              <div class="service-label">Maintenance</div>
+            </div>
+            <div class="service-card" onclick="showVisitorLogPage()">
+              <div class="service-icon"><i data-lucide="door-open" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i></div>
+              <div class="service-label">Visitor Log</div>
+            </div>
+            <div class="service-card" onclick="showPaymentsPage()">
+              <div class="service-icon"><i data-lucide="credit-card" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i></div>
+              <div class="service-label">Payments</div>
+            </div>
+            <div class="service-card" onclick="showResidentsChatPage()">
+              <div class="service-icon"><i data-lucide="message-square" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i></div>
+              <div class="service-label">Residents Chat</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <section class="promo-banner">
+        <div class="container banner-inner">
+          <div class="banner-text"><h4 class="banner-title">Control Local Business Listings</h4><p class="banner-sub">Approve, deny, and manage vendors serving Upavan Apartment.</p></div>
+          <div class="banner-action"><button class="btn-primary" onclick="showManageMembersPage('services')">Manage Businesses</button></div>
+        </div>
+      </section>
+      
+      <section class="signup-options">
+        <div class="footer-inner container signup-inner" style="background-color: var(--yellow-bg-light);">
+            <h4>Recent Administration Activities</h4>
+            <p class="signup-subtext">A log of recent actions taken by the Admin account.</p>
+            <div class="activity-grid-wrapper">
+                <div class="activity-card activity-left" style="width: 100%; max-width: 500px; margin: 0 auto;">
+                    <h5 class="activity-title">Activity Log</h5>
+                    <ul class="activity-list">
+                        <li style="text-align:center;color:#999;">Loading activities...</li>
+                    </ul>
+                </div>
+                <div class="activity-card activity-right" style="width: 100%; max-width: 500px; margin: 0 auto;">
+                    <h5 class="activity-title" style="color: var(--dark-green-bg);">Admin Tip: Optimize Dues</h5>
+                    <p style="font-size: 14px; text-align: left; margin-bottom: 15px;">Consider sending automated payment reminders to the 5 overdue accounts to improve collection speed.</p>
+                    <div class="chat-demo-box" style="padding: 12px; background: #e0f2ff;">
+                        <p class="chat-message-right" style="background: var(--dark-green-bg); border-radius: 20px; padding: 10px 15px; font-size: 14px; color: white;">Reminder sent successfully.</p>
+                        <p class="chat-message-info" style="text-align: right; margin-top: 5px; color: var(--dark);">System Log - 10:30 AM</p>
+                        <button class="btn-primary" style="margin: 15px auto 0; max-width: 200px;" onclick="showPaymentsPage()">Manage Payments</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </section>
+      
+      <section class="we-are-section"> 
+        <div class="container"> 
+          <div class="we-are-inner we-are-grid"> 
+            <div class="we-are-left"> 
+              <h4 class="we-are-title">We're Urvoic</h4> 
+              <img src="https://i.ibb.co/JwfKGWwJ/IMG-20251110-220238.jpg" alt="Horizontal community illustration" class="we-are-image" /> 
+              <div class="mission-box"> 
+                <h5 class="mission-title">Our Mission</h5> 
+                <p class="we-are-sub">A community based Society platform. A platform where people living in the same society can Connect, Communicate, Solve problems &amp; make better choices together.</p> 
+              </div> 
+            </div> 
+            <div class="we-are-right"> 
+              <div class="rating-box"> 
+                <h5 class="rating-title">Rate Us</h5> 
+                <div class="star-rating-icons" id="urvoic-rating"> <i data-lucide="star" data-rating="1"></i> <i data-lucide="star" data-rating="2"></i> <i data-lucide="star" data-rating="3"></i> <i data-lucide="star" data-rating="4"></i> <i data-lucide="star" data-rating="5"></i> </div> 
+                <p id="rating-message" class="rating-message-text">Click a star to rate us!</p> 
+              </div> 
+              <div class="chat-demo-orange"> 
+                <h5 class="chat-demo-title">Live Society Chat</h5> 
+                <div id="admin-chat-preview">
+                  <p style="color:#999;font-size:14px;">Loading chat...</p>
+                </div>
+                <a onclick="showResidentsChatPage()" class="btn-chat-view" style="cursor:pointer; display:inline-block; margin-top:10px;">Manage Chats</a>
+              </div> 
+            </div> 
+          </div> 
+        </div> 
+      </section>
+  </div>
+  
+  <div id="announcement-view" class="view-section">
+      <main class="page-main">
+        <div class="container">
+            <div class="page-header">
+                <button class="icon-btn" onclick="showAdminDashboardPage()"><i data-lucide="arrow-left"></i></button>
+                <div class="page-header-icon" style="background-color: var(--blue-bg); color: var(--blue);"><i data-lucide="megaphone"></i></div>
+                <div><h1 class="page-title">Announcements</h1><p class="page-subtitle">Create and manage all society notices</p></div>
+            </div>
+            <div id="create-announcement-form" class="page-card" style="display: none;">
+                <h2 style="margin-top:0;">Create New Announcement</h2>
+                <form onsubmit="event.preventDefault(); publishAnnouncement();">
+                    <div class="form-group"><label for="ann-title">Title</label><input type="text" id="ann-title" class="form-input" placeholder="e.g., Annual General Meeting" required></div>
+                    <div class="form-group"><label for="ann-desc">Description</label><textarea id="ann-desc" class="form-input" rows="5" placeholder="Write the full details here..."></textarea></div>
+                    <div class="form-button-row"><button type="submit" class="form-submit-btn">Publish Announcement</button><button type="button" class="btn-cancel" id="cancel-announcement-btn">Cancel</button></div>
+                </form>
+            </div>
+            <div class="create-announcement-row" id="create-announcement-row-id">
+                <button id="show-form-btn" class="btn-primary" style="background: var(--dark-green-bg); color: white; max-width: 250px; margin: 0;">
+                    <i data-lucide="plus" style="width: 16px; height: 16px; margin-right: 8px;"></i>Create Announcement
+                </button>
+            </div>
+            <div id="past-announcements-section">
+                <h2 class="feed-title">Past Announcements</h2>
+                <div id="past-announcements-list" class="announcement-list">
+                    <p style="text-align:center;color:#999;padding:20px;">Loading...</p>
+                </div>
+            </div>
+        </div>
+      </main>
+  </div>
+  
+  <div id="manage-members-view" class="view-section">
+      <main class="page-main">
+        <div class="container">
+            <div class="page-header">
+                <button class="icon-btn" onclick="showAdminDashboardPage()"><i data-lucide="arrow-left"></i></button>
+                <div class="page-header-icon" style="background-color: var(--blue-bg); color: var(--blue);"><i data-lucide="users"></i></div>
+                <div><h1 class="page-title">Manage Members</h1><p class="page-subtitle">Approve requests and manage all members</p></div>
+            </div>
+            
+            <div class="form-toggle" id="member-toggle">
+                <button type="button" class="toggle-btn active" data-target="residents-content">Residents</button>
+                <button type="button" class="toggle-btn" data-target="guards-content">Guards</button>
+                <button type="button" class="toggle-btn" data-target="services-content">Services</button>
+            </div>
+
+            <div id="residents-content" class="tab-content active">
+                <div class="pending-requests-card">
+                    <h2 class="feed-title">Pending Join Requests</h2>
+                    <div id="approval-requests-list" class="member-list">
+                        <p style="text-align:center;color:#999;padding:20px;">Loading...</p>
+                    </div>
+                </div>
+                <h2 class="feed-title">Current Residents</h2>
+                <div id="approved-residents-list" class="member-list">
+                    <p style="text-align:center;color:#999;padding:20px;">Loading...</p>
+                </div>
+            </div>
+            
+            <div id="guards-content" class="tab-content">
+                <div class="pending-requests-card">
+                    <h2 class="feed-title">Pending Guard Requests</h2>
+                    <div id="pending-guards-list" class="member-list">
+                        <p style="text-align:center;color:#999;padding:20px;">Loading...</p>
+                    </div>
+                </div>
+                <h2 class="feed-title">Current Guards</h2>
+                <div id="approved-guards-list" class="member-list">
+                    <p style="text-align:center;color:#999;padding:20px;">Loading...</p>
+                </div>
+            </div>
+            
+            <div id="services-content" class="tab-content">
+                <h2 class="feed-title">Registered Businesses</h2>
+                <div id="approved-businesses-list" class="member-list">
+                    <p style="text-align:center;color:#999;padding:20px;">Loading...</p>
+                </div>
+            </div>
+        </div>
+      </main>
+  </div>
+  
+  <div id="visitor-log-view" class="view-section">
+    <main class="page-main">
+        <div class="container">
+            <div class="page-header">
+                <button class="icon-btn" onclick="showAdminDashboardPage()" style="background: var(--glass); color: var(--dark); border: 1px solid var(--glass);">
+                     <i data-lucide="arrow-left"></i>
+                </button>
+                <div class="page-header-icon" style="background-color: var(--blue-bg); color: var(--blue);">
+                    <i data-lucide="door-open"></i>
+                </div>
+                <div>
+                    <h1 class="page-title">Visitor Log</h1>
+                    <p class="page-subtitle">Manage guest and delivery entries</p>
+                </div>
+            </div>
+            
+            <div class="page-card">
+                <div class="form-toggle" id="visitorToggle">
+                    <button type="button" class="toggle-btn active" data-target="pre-approve-form">Pre-Approve Visitor</button>
+                    <button type="button" class="toggle-btn" data-target="pending-requests-list">Pending Requests (2)</button>
+                </div>
+                
+                <div id="pre-approve-form" class="visitor-form-content active">
+                    <form id="admin-visitor-form" onsubmit="event.preventDefault(); preApproveVisitorAdmin();">
+                        <div class="form-group">
+                            <label for="visitor-name">Visitor Name</label>
+                            <input type="text" id="visitor-name" class="form-input" placeholder="e.g., Rohan Sharma" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="visitor-flat-admin">Flat No.</label>
+                            <input type="text" id="visitor-flat-admin" class="form-input" placeholder="e.g., A-101" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="visitor-type">Visitor Type</label>
+                            <select id="visitor-type" class="form-input" required>
+                                <option value="">Select a type...</option>
+                                <option value="guest">Guest</option>
+                                <option value="delivery">Delivery</option>
+                                <option value="service">Service (Electrician, etc.)</option>
+                            </select>
+                        </div>
+                        <div class="form-grid-2" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                            <div class="form-group">
+                                <label for="visitor-date">Expected Date</label>
+                                <input type="date" id="visitor-date" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="visitor-time">Expected Time</label>
+                                <input type="time" id="visitor-time" class="form-input" required>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 12px;">
+                            <button type="submit" class="form-submit-btn" style="flex: 1;">Pre-Approve Entry</button>
+                            <button type="button" class="form-submit-btn" style="background: var(--blue); flex: 1;" onclick="generateAdminVisitorQR()"><i data-lucide="qr-code" style="width: 18px; height: 18px; margin-right: 8px;"></i>Generate QR</button>
+                        </div>
+                    </form>
+                    <div id="admin-qr-container" style="margin-top: 20px; display: none; text-align: center;">
+                        <h4>Visitor QR Code</h4>
+                        <div id="admin-qr-code" style="display: inline-block; padding: 20px; background: white; border-radius: 8px;"></div>
+                        <p style="font-size: 12px; color: var(--muted); margin-top: 10px;">Share this QR code with the visitor</p>
+                        <button type="button" class="btn-primary" style="margin-top: 12px;" onclick="downloadAdminQRCode()">Download QR Code</button>
+                    </div>
+                </div>
+                
+                <div id="pending-requests-list" class="visitor-form-content">
+                    <div id="pending-visitor-entries">
+                        <p style="text-align:center;color:#999;padding:20px;">Loading pending visitors...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <h2 class="feed-title">Visitor History</h2>
+            
+            <div class="item-grid">
+                <p style="text-align:center;color:#999;padding:20px;">Loading visitor history...</p>
+            </div> 
+        </div>
+    </main>
+  </div>
+  
+  <div id="maintenance-view" class="view-section">
+      <main class="page-main">
+        <div class="container">
+            <div class="page-header">
+                <button class="icon-btn" onclick="showAdminDashboardPage()"><i data-lucide="arrow-left"></i></button>
+                <div class="page-header-icon" style="background-color: var(--brand); color: white;"><i data-lucide="wrench"></i></div>
+                <div><h1 class="page-title">Maintenance</h1><p class="page-subtitle">Manage all resident complaints</p></div>
+            </div>
+            <div class="filter-toggle" id="maintenance-filter-toggle">
+                <button class="filter-btn active" data-filter="pending">Pending <span class="count-badge" id="maint-pending-count"></span></button>
+                <button class="filter-btn" data-filter="in_progress">In Progress <span class="count-badge" id="maint-progress-count" style="background-color: var(--blue);"></span></button>
+                <button class="filter-btn" data-filter="all">All Complaints</button>
+            </div>
+            <div class="page-card" style="padding: 0; overflow: hidden;">
+                <div class="table-wrapper">
+                    <table class="responsive-table" id="maintenance-table">
+                        <thead><tr><th>Complaint</th><th>Category</th><th>Reported</th><th>Assigned To</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody>
+                            <tr><td colspan="6" style="text-align:center;padding:20px;color:#999;">Loading maintenance requests...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+      </main>
+  </div>
+  
+  <div id="payments-view" class="view-section">
+      <main class="page-main">
+        <div class="container">
+            <div class="page-header">
+                <button class="icon-btn" onclick="showAdminDashboardPage()"><i data-lucide="arrow-left"></i></button>
+                <div class="page-header-icon" style="background-color: var(--brand); color: white;"><i data-lucide="credit-card"></i></div>
+                <div><h1 class="page-title">Payments & Dues</h1><p class="page-subtitle">Track and manage all resident payments</p></div>
+            </div>
+            <section class="dashboard-section" style="padding: 0 0 24px 0; background: none;">
+                <div class="dashboard-grid" style="max-width: 1100px; padding: 0; grid-template-columns: 1fr 1fr;">
+                    <div class="dashboard-card"><div class="dashboard-icon"><p class="dashboard-value" id="payments-collected-total">₹0</p><div class="icon-bg bg-green-light"><i data-lucide="wallet" class="text-green" width="24" height="24"></i></div></div><p class="dashboard-title">Collected (Nov)</p></div>
+                    <div class="dashboard-card"><div class="dashboard-icon"><p class="dashboard-value" id="payments-pending-total">₹0</p><div class="icon-bg bg-red-light"><i data-lucide="alert-circle" class="text-red" width="24" height="24"></i></div></div><p class="dashboard-title">Pending (Nov)</p></div>
+                </div>
+            </section>
+            <div id="payment-summary-list-container">
+                <h2 class="feed-title">Payment Overview for November 2025</h2>
+                <div class="member-list" id="payment-summary-list">
+                    <p style="text-align:center;color:#999;padding:20px;">Loading payments...</p>
+                </div>
+            </div>
+            <div id="payment-detail-view" class="page-card" style="display: none; border-left: 4px solid var(--brand); margin-top: 20px;">
+                <h3 id="payment-detail-title" style="margin-top: 0;">Payment Details</h3>
+                <ul class="profile-details-list">
+                    <li class="profile-detail-item"><div class="profile-detail-info"><span class="profile-detail-label">Flat</span><span id="detail-flat" class="profile-detail-value">--</span></div><div class="profile-detail-info"><span class="profile-detail-label">Resident</span><span id="detail-resident" class="profile-detail-value">--</span></div></li>
+                    <li class="profile-detail-item"><div class="profile-detail-info"><span class="profile-detail-label">Amount</span><span id="detail-amount" class="profile-detail-value">--</span></div><div class="profile-detail-info"><span class="profile-detail-label">Month</span><span id="detail-month" class="profile-detail-value">--</span></div></li>
+                    <li class="profile-detail-item"><div class="profile-detail-info"><span class="profile-detail-label">Status</span><span id="detail-status" class="profile-detail-value">--</span></div><div class="profile-detail-info"><span class="profile-detail-label">Date Paid</span><span id="detail-date" class="profile-detail-value">--</span></div></li>
+                </ul>
+                <div class="form-button-row" style="margin-top: 20px;">
+                    <button class="form-submit-btn" id="btn-send-reminder" style="background: var(--blue);"><i data-lucide="send" style="width: 16px; margin-right: 8px;"></i>Send Reminder</button>
+                    <button class="form-submit-btn" id="btn-mark-paid" style="background: var(--dark-green-bg);"><i data-lucide="check" style="width: 16px; margin-right: 8px;"></i>Mark as Paid (Cash)</button>
+                    <button class="btn-cancel" id="cancel-payment-detail-btn">Cancel</button>
+                </div>
+            </div>
+        </div>
+      </main>
+  </div>
+  
+  <div id="residents-chat-view" class="view-section">
+      <main class="page-main">
+          <div class="container">
+              <div class="page-header">
+                  <button class="icon-btn" onclick="showAdminDashboardPage()" style="background: var(--glass); color: var(--dark); border: 1px solid var(--glass);">
+                       <i data-lucide="arrow-left"></i>
+                  </button>
+                  <div class="page-header-icon" style="background-color: var(--blue-bg); color: var(--blue);">
+                      <i data-lucide="message-square"></i>
+                  </div>
+                  <div>
+                      <h1 class="page-title">Residents Chat</h1>
+                      <p class="page-subtitle">Monitor all group conversations</p>
+                  </div>
+              </div>
+              
+              <div class="chat-list-container">
+                  <p style="text-align:center;color:#999;padding:20px;">Loading chat groups...</p>
+              </div>
+          </div>
+      </main>
+  </div> 
+  
+  <div id="individual-chat-view" class="view-section">
+      <div class="chat-view-header">
+          <button class="icon-btn" onclick="showResidentsChatPage()">
+               <i data-lucide="arrow-left"></i>
+          </button>
+          <div class="chat-icon" style="background-color: var(--blue-bg); color: var(--blue);">
+              <i data-lucide="gamepad-2"></i>
+          </div>
+          <h4 id="chatGroupName"></h4>
+      </div>
+      
+      <div class="chat-view-body">
+          <div class="chat-messages-container" id="chat-messages-container">
+              <p style="text-align:center;color:#999;padding:20px;">Loading messages...</p>
+          </div>
+      </div>
+      
+      <div class="chat-view-footer">
+          <input type="text" id="chatInput" class="form-input chat-input" placeholder="Type a message...">
+          <button class="btn-send" onclick="sendChatMessage()">
+              <i data-lucide="send"></i>
+          </button>
+      </div>
+  </div>
+  
+  <div id="my-profile-view" class="view-section">
+      <main class="page-main">
+          <div class="container" style="max-width: 700px;">
+              <div class="page-header">
+                  <button class="icon-btn" onclick="showAdminDashboardPage()">
+                       <i data-lucide="arrow-left"></i>
+                  </button>
+                  <div class="page-header-icon" style="background-color: var(--green-bg); color: var(--brand);">
+                      <i data-lucide="user"></i>
+                  </div>
+                  <div>
+                      <h1 class="page-title">My Profile</h1>
+                      <p class="page-subtitle">View and edit your personal details</p>
+                  </div>
+              </div>
+              
+              <div class="page-card" style="text-align: center;">
+                  <div style="position: relative; width: 120px; margin: 0 auto;">
+                      <img id="admin-profile-pic" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3C/svg%3E" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; display: none;">
+                      <div id="admin-pic-placeholder" class="profile-pic-placeholder" style="width: 120px; height: 120px; font-size: 48px; margin-bottom: 16px; background-color: var(--brand); color: white;">A</div>
+                      <input type="file" id="admin-photo-input" accept="image/*" style="display: none;">
+                      <button type="button" class="profile-edit-btn" onclick="document.getElementById('admin-photo-input').click()">
+                          <i data-lucide="camera"></i>
+                      </button>
+                  </div>
+                  <div class="profile-bio-container" data-field-name="Bio">
+                      <div class="profile-bio-display">
+                          <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                              <h3 style="margin:0; font-size: 16px; color: var(--muted);">Your personal bio</h3>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark); width: 28px; height: 28px;"><i data-lucide="edit-2" style="width: 16px; height: 16px;"></i></button>
+                          </div>
+                          <p class="profile-detail-value" style="font-size: 15px; line-height: 1.5; margin-top: 8px;" data-original-value="(No description added. Click the edit icon to add one.)">
+                              (No description added. Click the edit icon to add one.)
+                          </p>
+                      </div>
+                      <div class="profile-bio-edit">
+                          <textarea class="form-input profile-edit-input" rows="3">(No description added. Click the edit icon to add one.)</textarea>
+                          <div style="display: flex; justify-content: center; gap: 8px;">
+                              <button class="btn-save" style="background: var(--brand); color: white; padding: 8px 16px; font-size: 14px; border-radius: 8px;">Save</button>
+                              <button class="btn-cancel" style="padding: 8px 16px; font-size: 14px; border-radius: 8px;">Cancel</button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <div class="page-card">
+                  <ul class="profile-details-list">
+                      <li class="profile-detail-item" data-field-name="Name">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info"><span class="profile-detail-label">Name</span><span class="profile-detail-value" data-original-value="Mrs. President">Mrs. President</span></div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <input type="text" class="profile-edit-input" value="Mrs. President">
+                              <div class="profile-edit-actions"><button class="btn-save"><i data-lucide="check"></i></button><button class="btn-cancel"><i data-lucide="x"></i></button></div>
+                          </div>
+                      </li>
+                      <li class="profile-detail-item" data-field-name="Email">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info"><span class="profile-detail-label">Email</span><span class="profile-detail-value" data-original-value="admin@upavan.com">admin@upavan.com</span></div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <input type="email" class="profile-edit-input" value="admin@upavan.com">
+                              <div class="profile-edit-actions"><button class="btn-save"><i data-lucide="check"></i></button><button class="btn-cancel"><i data-lucide="x"></i></button></div>
+                          </div>
+                      </li>
+                      <li class="profile-detail-item" data-field-name="Phone No.">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info"><span class="profile-detail-label">Phone No.</span><span class="profile-detail-value" data-original-value="+91 98765 00000">+91 98765 00000</span></div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <input type="tel" class="profile-edit-input" value="+91 98765 00000">
+                              <div class="profile-edit-actions"><button class="btn-save"><i data-lucide="check"></i></button><button class="btn-cancel"><i data-lucide="x"></i></button></div>
+                          </div>
+                      </li>
+                      <li class="profile-detail-item">
+                          <div class="profile-detail-info"><span class="profile-detail-label">Role</span><span class="profile-detail-value">Admin</span></div>
+                      </li>
+                      
+                      <li class="profile-detail-item" data-field-name="Family Members">
+                        <div class="profile-detail-display">
+                            <div class="profile-detail-info">
+                                <span class="profile-detail-label">Family Members</span>
+                                <div class="profile-detail-value" data-original-value="Priya (Wife), Aryan (Son)">
+                                    Priya (Wife), Aryan (Son)
+                                </div>
+                            </div>
+                            <button class="icon-btn btn-edit-toggle" style="color: var(--dark);">
+                                <i data-lucide="edit-2" style="width: 16px;"></i>
+                            </button>
+                        </div>
+                        <div class="profile-detail-edit">
+                            <input type="text" class="profile-edit-input" value="Priya (Wife), Aryan (Son)" placeholder="Add names...">
+                            <div class="profile-edit-actions">
+                                <button class="btn-save"><i data-lucide="check"></i></button>
+                                <button class="btn-cancel"><i data-lucide="x"></i></button>
+                            </div>
+                        </div>
+                    </li>
+
+                    <li class="profile-detail-item" data-field-name="Vehicle">
+                        <div class="profile-detail-display">
+                            <div class="profile-detail-info">
+                                <span class="profile-detail-label">Vehicle Details</span>
+                                <div class="profile-detail-value" data-original-value="Car - DL 3C AB 1234">
+                                    Car - DL 3C AB 1234
+                                </div>
+                            </div>
+                            <button class="icon-btn btn-edit-toggle" style="color: var(--dark);">
+                                <i data-lucide="edit-2" style="width: 16px;"></i>
+                            </button>
+                        </div>
+                        <div class="profile-detail-edit">
+                            <div style="display:flex; gap:5px; flex:1;">
+                                <select class="profile-edit-input" style="width:40%;">
+                                    <option value="Car">Car</option>
+                                    <option value="Bike">Bike</option>
+                                    <option value="Scooter">Scooter</option>
+                                </select>
+                                <input type="text" class="profile-edit-input" value="DL 3C AB 1234" placeholder="Number Plate">
+                            </div>
+                            <div class="profile-edit-actions">
+                                <button class="btn-save"><i data-lucide="check"></i></button>
+                                <button class="btn-cancel"><i data-lucide="x"></i></button>
+                            </div>
+                        </div>
+                    </li>
+                  </ul>
+              </div>
+          </div>
+      </main>
+  </div>
+  
+  <div id="info-view" class="view-section">
+      <main class="info-main">
+          <div class="info-container">
+              <div class="info-header"><h2 class="info-title" id="pageTitle">Page Title</h2><div class="info-subtitle" id="pageSubtitle">Subtitle</div></div>
+              <div class="info-content" id="pageContent"></div>
+              <div style="margin-top: 30px;"><button class="btn-primary" onclick="showAdminDashboardPage()">Back to Home</button></div>
+          </div>
+      </main>
+  </div>
+
+  {% include '_footer.html' %}
+</div>
+
+<div id="assign-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Assign Technician</h3>
+        <div class="form-group"><label for="assign-staff">Staff Member</label><select id="assign-staff" class="form-input"><option value="unassigned">Unassigned</option><option value="Raj (Electrician)">Raj (Electrician)</option></select></div>
+        <div class="form-button-row"><button class="form-submit-btn" id="save-assign-btn">Save</button><button class="btn-cancel" id="cancel-assign-btn">Cancel</button></div>
+    </div>
+</div>
+<div id="mark-paid-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Confirm Payment</h3>
+        <p>Mark maintenance for <strong id="mark-paid-resident"></strong> as <strong style="color: var(--brand);">PAID (Cash)</strong>?</p>
+        <div class="form-button-row"><button class="form-submit-btn" id="save-paid-btn">Confirm</button><button class="btn-cancel" id="cancel-paid-btn">Cancel</button></div>
+    </div>
+</div>
+<div id="assign-work-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Assign Work</h3>
+        <p>Assign a job to <strong id="assign-work-service-name">Service</strong>:</p>
+        <div class="form-group"><label>Job Description</label><textarea id="assign-work-desc" class="form-input" rows="3"></textarea></div>
+        <div class="form-button-row"><button class="form-submit-btn" id="save-assign-work-btn">Assign</button><button class="btn-cancel" id="cancel-assign-work-btn">Cancel</button></div>
+    </div>
+</div>
+
+</body>
+</html>

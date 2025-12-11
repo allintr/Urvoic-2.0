@@ -1,0 +1,16 @@
+Flask
+Flask-Login
+Flask-SQLAlchemy
+Flask-Cors
+SQLAlchemy
+Pillow
+psycopg2-binary
+python-dotenv
+qrcode
+werkzeug
+gunicorn
+oauthlib
+requests
+eventlet
+flask-socketio
+python-socketio

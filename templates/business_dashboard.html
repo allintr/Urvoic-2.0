@@ -1,0 +1,490 @@
+<!-- Paste your Business/Local Service Provider Dashboard HTML here -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upavan Apartment - Business Dashboard</title>
+    
+    <link rel="stylesheet" href="/static/business_dashboard.css">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script src="/static/business_dashboard.js" defer></script>
+</head>
+<body>
+<script>
+    window.currentUserId = {{ current_user_id|tojson }};
+</script>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<nav class="sidebar-nav" id="sidebar-nav">
+    <div class="sidebar-profile">
+        <div class="profile-pic-placeholder" style="background-color: var(--blue);">{{ user.full_name[0].upper() }}</div>
+        <h4 class="profile-name">{{ user.business_name }}</h4>
+        <p class="profile-flat">{{ user.business_category }}</p>
+        <a data-page="profile" class="btn-sidebar btn-view-profile">View Profile</a>
+    </div>
+    <div class="sidebar-links">
+        <a data-page="dashboard" class="btn-sidebar">Dashboard</a>
+        <a data-page="bookings" class="btn-sidebar">Bookings</a>
+        <a data-page="reviews" class="btn-sidebar">Reviews</a>
+        <a data-page="schedule" class="btn-sidebar">Schedule</a>
+        <a data-page="earnings" class="btn-sidebar">Earnings</a>
+    </div>
+    <div class="sidebar-footer">
+        <a href="#" class="btn-sidebar btn-logout">
+            <i data-lucide="log-out"></i>
+            <span>Log Out</span>
+        </a>
+    </div>
+</nav>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<div class="notification-overlay" id="notificationOverlay"></div>
+<aside class="notification-panel" id="notificationPanel">
+    <div class="notification-header">
+        <h3>Notifications</h3>
+        <button class="icon-btn" style="color: var(--dark);" id="close-notifications-btn">
+            <i data-lucide="x"></i>
+        </button>
+    </div>
+    <div class="notification-panel-body">
+        <ul class="notification-list" id="business-notification-list">
+        </ul>
+        <div style="padding: 20px; text-align: center; color: #999;">
+            <p>No notifications yet</p>
+        </div>
+    </div>
+</aside>
+
+<div class="site">
+  
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" data-page="dashboard">
+        <img src="https://i.ibb.co/gMrgR5tG/1763226137808-modified.png" alt="Urvoic Logo" class="brand-image" />
+        <span class="brand-name">Urvoic</span>
+      </a>
+      <div class="header-actions">
+        <button class="icon-btn" aria-label="Search" id="header-search-btn"> <i data-lucide="search"></i> </button>
+        <button class="icon-btn" aria-label="Notifications" id="header-notify-btn"> <i data-lucide="bell"></i> </button>
+        <button class="icon-btn" id="hamburger-btn" aria-label="Open menu">
+            <i data-lucide="menu" class="icon-menu"></i>
+            <i data-lucide="x" class="icon-close"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div id="dashboard-view" class="view-section active-view">
+      <main class="hero">
+        <div class="hero-inner">
+          <h1 class="hero-title">{{ user.society_name }}</h1>
+          <p class="hero-sub">Welcome back {{ user.business_name }}!</p> 
+          <div class="search-row">
+            <input id="heroSearchInput" class="search-input" placeholder="What's on your mind today?" aria-label="What's on your mind today?" />
+            <button class="search-btn" aria-label="search-button">
+              <i data-lucide="search" style="width: 18px; height: 18px;"></i>
+            </button>
+          </div>
+        </div>
+      </main>
+      
+      <section class="dashboard-section">
+        <div class="container">
+            <h3 class="section-title" style="text-align: left; margin-bottom: 20px; font-size: 20px;">Dashboard</h3>
+            
+            <div class="dashboard-grid">
+                
+                <div class="dashboard-card" data-page="bookings" style="cursor: pointer;">
+                    <div class="dashboard-icon"> <p class="dashboard-value" id="business-total-bookings">0</p> <div class="icon-bg bg-blue-light"> <i data-lucide="calendar-check" class="text-blue" width="24" height="24"></i> </div> </div>
+                    <p class="dashboard-title">Total Bookings</p>
+                </div>
+                
+                <div class="dashboard-card" data-page="reviews" style="cursor: pointer;">
+                    <div class="dashboard-icon"> <p class="dashboard-value" id="business-avg-rating">0</p> <div class="icon-bg bg-yellow-light"> <i data-lucide="star" class="text-yellow" width="24" height="24"></i> </div> </div>
+                    <p class="dashboard-title">Average Rating</p>
+                </div>
+                
+                <div class="dashboard-card" data-page="bookings" data-tab="tab-new" style="cursor: pointer;">
+                    <div class="dashboard-icon"> <p class="dashboard-value" id="business-pending-requests">0</p> <div class="icon-bg bg-red-light"> <i data-lucide="bell-ring" class="text-red" width="24" height="24"></i> </div> </div>
+                    <p class="dashboard-title">Pending Request</p>
+                </div>
+                
+                <div class="dashboard-card" data-page="earnings" style="cursor: pointer;">
+                    <div class="dashboard-icon"> <p class="dashboard-value" id="business-earnings">₹0</p> <div class="icon-bg bg-green-light"> <i data-lucide="dollar-sign" class="text-green" width="24" height="24"></i> </div> </div>
+                    <p class="dashboard-title">Month's Earnings</p>
+                </div>
+
+            </div>
+        </div>
+      </section>
+      
+      <section class="services-section">
+        <div class="container">
+          <h3 class="section-title">Society is in your hands now!</h3>
+          <div class="services-grid">
+            <div class="service-card" data-page="profile">
+              <div class="service-icon"> <i data-lucide="user-cog" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i> </div>
+              <div class="service-label">Profile</div>
+            </div>
+            <div class="service-card" data-page="bookings">
+              <div class="service-icon"> <i data-lucide="calendar-check" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i> </div>
+              <div class="service-label">Bookings</div>
+            </div>
+            <div class="service-card" data-page="reviews">
+              <div class="service-icon"> <i data-lucide="star" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i> </div>
+              <div class="service-label">Reviews</div>
+            </div>
+            <div class="service-card" data-page="schedule">
+              <div class="service-icon"> <i data-lucide="calendar-clock" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i> </div>
+              <div class="service-label">Schedule</div>
+            </div>
+            <div class="service-card" data-page="earnings">
+              <div class="service-icon"> <i data-lucide="bar-chart-2" width="36" height="36" stroke="#0b2f3a" stroke-width="1.5"></i> </div>
+              <div class="service-label">Earnings</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="signup-options">
+        <div class="footer-inner container signup-inner">
+            <h4>Recent Account Activity</h4>
+            <p class="signup-subtext">A log of recent bookings and updates to your profile.</p>
+            <div class="activity-grid-wrapper">
+                <div class="activity-card activity-left" style="width: 100%; max-width: 500px; margin: 0 auto;">
+                    <h5 class="activity-title">Booking &amp; Review Log</h5>
+                    <ul class="activity-list" id="business-activity-list">
+                        <li style="text-align:center;color:#999;">Loading activities...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+      </section>
+      
+      <section class="we-are-section">
+          <div class="container">
+              <div class="we-are-inner we-are-grid">
+                  <div class="we-are-left">
+                      <h4 class="we-are-title">We're Urvoic</h4>
+                      <img src="https://i.ibb.co/JwfKGWwJ/IMG-20251110-220238.jpg" alt="Horizontal community illustration" class="we-are-image" />
+                      <div class="mission-box">
+                          <h5 class="mission-title">Our Mission</h5>
+                          <p class="we-are-sub">A community based Society platform. A platform where people living in the same society can Connect, Communicate, Solve problems &amp; make better choices together.</p>
+                      </div>
+                  </div>
+                  <div class="we-are-right">
+                      <div class="rating-box">
+                          <h5 class="rating-title">Your satisfaction is our success</h5>
+                          <div class="star-rating-icons" id="urvoic-rating">
+                              <i data-lucide="star" data-rating="1"></i> <i data-lucide="star" data-rating="2"></i> <i data-lucide="star" data-rating="3"></i> <i data-lucide="star" data-rating="4"></i> <i data-lucide="star" data-rating="5"></i>
+                          </div>
+                          <p id="rating-message" class="rating-message-text">Click a star to rate us!</p>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </section>
+  </div> <div id="profile-view" class="view-section">
+      <main class="page-main">
+          <div class="container">
+              <div class="page-header">
+                  <button class="icon-btn" data-page="dashboard"> <i data-lucide="arrow-left"></i> </button>
+                  <div class="page-header-icon" style="background-color: var(--blue-bg); color: var(--blue);"> <i data-lucide="user-cog"></i> </div>
+                  <div>
+                      <h1 class="page-title">My Business Profile</h1>
+                      <p class="page-subtitle">Manage your public information and settings</p>
+                  </div>
+              </div>
+              <div class="page-card" style="text-align: center;">
+                  <div style="position: relative; width: 100px; margin: 0 auto;">
+                      <img id="business-profile-pic" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3C/svg%3E" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; display: none;">
+                      <div id="business-pic-placeholder" class="profile-pic-placeholder" style="background-color: var(--blue);">S</div>
+                      <input type="file" id="business-photo-input" accept="image/*" style="display: none;">
+                      <button type="button" class="profile-edit-btn" onclick="document.getElementById('business-photo-input').click();"> <i data-lucide="camera"></i> </button>
+                  </div>
+                  <h2 style="margin: 16px 0 4px 0;">Smart Learners</h2>
+                  <p style="margin: 0; color: var(--muted); font-size: 15px;">Your public business profile. Residents see this when booking.</p>
+              </div>
+              <div class="page-card">
+                  <h3 class="feed-title" style="margin-top: 0;">Business Details</h3>
+                  <ul class="profile-details-list">
+                      <li class="profile-detail-item" data-field-name="Business Name">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info"><span class="profile-detail-label">Business Name</span><span class="profile-detail-value" data-original-value="Smart Learners">Smart Learners</span></div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <input type="text" class="profile-edit-input" value="Smart Learners">
+                              <div class="profile-edit-actions"><button class="btn-save"><i data-lucide="check"></i></button><button class="btn-cancel"><i data-lucide="x"></i></button></div>
+                          </div>
+                      </li>
+                      <li class="profile-detail-item" data-field-name="Owner Name">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info"><span class="profile-detail-label">Owner Name</span><span class="profile-detail-value" data-original-value="Priya Singh">Priya Singh</span></div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <input type="text" class="profile-edit-input" value="Priya Singh">
+                              <div class="profile-edit-actions"><button class="btn-save"><i data-lucide="check"></i></button><button class="btn-cancel"><i data-lucide="x"></i></button></div>
+                          </div>
+                      </li>
+                      <li class="profile-detail-item" data-field-name="Service Category">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info"><span class="profile-detail-label">Service Category</span><span class="profile-detail-value" data-original-value="Home Tutors">Home Tutors</span></div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <select class="profile-edit-input"> <option value="Home Tutors">Home Tutors</option> <option value="Plumbing">Plumbing</option> <option value="Electrician">Electrician</option> <option value="Home Cleaning">Home Cleaning</option> </select>
+                              <div class="profile-edit-actions"><button class="btn-save"><i data-lucide="check"></i></button><button class="btn-cancel"><i data-lucide="x"></i></button></div>
+                          </div>
+                      </li>
+                      <li class="profile-detail-item" data-field-name="Phone No.">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info"><span class="profile-detail-label">Phone No.</span><span class="profile-detail-value" data-original-value="+91 98765 44444">+91 98765 44444</span></div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <input type="tel" class="profile-edit-input" value="+91 98765 44444">
+                              <div class="profile-edit-actions"><button class="btn-save"><i data-lucide="check"></i></button><button class="btn-cancel"><i data-lucide="x"></i></button></div>
+                          </div>
+                      </li>
+                      <li class="profile-detail-item" data-field-name="Service Timings">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info"><span class="profile-detail-label">Service Timings</span><span class="profile-detail-value" data-original-value="Mon-Sat, 9:00 AM - 6:00 PM">Mon-Sat, 9:00 AM - 6:00 PM</span></div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <input type="text" class="profile-edit-input" value="Mon-Sat, 9:00 AM - 6:00 PM">
+                              <div class="profile-edit-actions"><button class="btn-save"><i data-lucide="check"></i></button><button class="btn-cancel"><i data-lucide="x"></i></button></div>
+                          </div>
+                      </li>
+                      <li class="profile-detail-item" data-field-name="Office / Unit No.">
+                          <div class="profile-detail-display">
+                              <div class="profile-detail-info"><span class="profile-detail-label">Office / Unit No. (Optional)</span><span class="profile-detail-value" data-original-value="A-101 (Resident)">A-101 (Resident)</span></div>
+                              <button class="icon-btn btn-edit-toggle" style="color: var(--dark);"><i data-lucide="edit-2" style="width: 16px;"></i></button>
+                          </div>
+                          <div class="profile-detail-edit">
+                              <input type="text" class="profile-edit-input" value="A-101 (Resident)" placeholder="e.g., A-101 or 'External'">
+                              <div class="profile-edit-actions"><button class="btn-save"><i data-lucide="check"></i></button><button class="btn-cancel"><i data-lucide="x"></i></button></div>
+                          </div>
+                      </li>
+                  </ul>
+              </div>
+              <div class="page-card">
+                  <h3 class="feed-title" style="margin-top: 0;">Ratings & Reviews</h3>
+                  <div class="review-list" id="profile-reviews-list">
+                      <p style="text-align:center;color:#999;padding:20px;">Loading reviews...</p>
+                  </div>
+              </div>
+          </div>
+      </main>
+  </div> <div id="bookings-view" class="view-section">
+      <main class="page-main">
+          <div class="container">
+              <div class="page-header">
+                  <button class="icon-btn" data-page="dashboard"> <i data-lucide="arrow-left"></i> </button>
+                  <div class="page-header-icon" style="background-color: var(--green-bg); color: var(--brand);"> <i data-lucide="calendar-check"></i> </div>
+                  <div>
+                      <h1 class="page-title">Bookings & Schedule</h1>
+                      <p class="page-subtitle">View your daily schedule and manage all bookings</p>
+                  </div>
+              </div>
+              <div class="page-card">
+                  <h3 class="feed-title" style="margin-top: 0;">Today's Schedule</h3>
+                  <ul class="schedule-list" id="today-schedule-list">
+                      <li style="color:#999;text-align:center;padding:20px;">Loading schedule...</li>
+                  </ul>
+              </div>
+              <div class="page-card" style="padding: 24px 0 16px 0;">
+                  <h3 class="feed-title" style="margin-top: 0; padding: 0 24px;">Manage Bookings</h3>
+                  <div class="form-toggle" style="margin-left: 24px; margin-right: 24px;">
+                      <button class="toggle-btn active" data-tab="tab-new"> <i data-lucide="bell-ring" style="width: 16px;"></i> New Requests (2) </button>
+                      <button class="toggle-btn" data-tab="tab-upcoming"> <i data-lucide="calendar" style="width: 16px;"></i> Upcoming </button>
+                      <button class="toggle-btn" data-tab="tab-history"> <i data-lucide="history" style="width: 16px;"></i> History </button>
+                  </div>
+                  <div id="tab-new" class="tab-content active" style="padding: 0 24px;">
+                      <div class="member-list" id="booking-new-requests">
+                          <p style="text-align:center;color:#999;padding:20px;">Loading new requests...</p>
+                      </div>
+                  </div>
+                  <div id="tab-upcoming" class="tab-content" style="padding: 0 24px;">
+                      <div class="member-list" id="booking-upcoming-list">
+                          <p style="text-align:center;color:#999;padding:20px;">Loading upcoming bookings...</p>
+                      </div>
+                  </div>
+                  <div id="tab-history" class="tab-content" style="padding: 0 24px;">
+                      <div class="member-list" id="booking-history-list">
+                          <p style="text-align:center;color:#999;padding:20px;">Loading booking history...</p>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </main>
+  </div> <div id="reviews-view" class="view-section">
+      <main class="page-main">
+          <div class="container">
+              <div class="page-header">
+                  <button class="icon-btn" data-page="dashboard"> <i data-lucide="arrow-left"></i> </button>
+                  <div class="page-header-icon" style="background-color: var(--yellow-bg-light); color: var(--orange);"> <i data-lucide="star"></i> </div>
+                  <div>
+                      <h1 class="page-title">Ratings & Reviews</h1>
+                      <p class="page-subtitle">See what residents are saying about your service</p>
+                  </div>
+              </div>
+              <div class="page-card rating-summary-card">
+                  <div class="rating-overall-box">
+                      <h2 class="overall-rating">4.3</h2>
+                      <div class="rating-stars-inline"> <i data-lucide="star"></i> <i data-lucide="star"></i> <i data-lucide="star"></i> <i data-lucide="star"></i> <i data-lucide="star-half"></i> </div>
+                      <p class="total-reviews-text">Based on 4 reviews</p>
+                  </div>
+                  <div class="rating-breakdown-box">
+                      <ul class="rating-breakdown-list">
+                          <li class="filter-row" data-rating-filter="5"> <span class="filter-label">5 star</span> <progress class="filter-progress" value="50" max="100"></progress> <span class="filter-count">2</span> </li>
+                          <li class="filter-row" data-rating-filter="4"> <span class="filter-label">4 star</span> <progress class="filter-progress" value="25" max="100"></progress> <span class="filter-count">1</span> </li>
+                          <li class="filter-row" data-rating-filter="3"> <span class="filter-label">3 star</span> <progress class="filter-progress" value="0" max="100"></progress> <span class="filter-count">0</span> </li>
+                          <li class="filter-row" data-rating-filter="2"> <span class="filter-label">2 star</span> <progress class="filter-progress" value="0" max="100"></progress> <span class="filter-count">0</span> </li>
+                          <li class="filter-row" data-rating-filter="1"> <span class="filter-label">1 star</span> <progress class="filter-progress" value="25" max="100"></progress> <span class="filter-count">1</span> </li>
+                      </ul>
+                      <button class="btn-filter-all active">Show all reviews</button>
+                  </div>
+              </div>
+              <div>
+                  <h3 class="feed-title" id="review-list-title" style="margin-bottom: 20px;">All Reviews</h3>
+                  <div class="review-list" id="review-list-container">
+                      <p style="text-align:center;color:#999;padding:20px;">Loading reviews...</p>
+                      <p id="no-reviews-found" style="text-align: center; display: none; color: var(--muted);">No reviews found for this rating.</p>
+                  </div>
+              </div>
+          </div>
+      </main>
+  </div> <div id="schedule-view" class="view-section">
+      <main class="page-main">
+          <div class="container">
+              <div class="page-header">
+                  <button class="icon-btn" data-page="dashboard"> <i data-lucide="arrow-left"></i> </button>
+                  <div class="page-header-icon" style="background-color: var(--blue-bg); color: var(--blue);"> <i data-lucide="calendar-days"></i> </div>
+                  <div>
+                      <h1 class="page-title">My Schedule</h1>
+                      <p class="page-subtitle">View your bookings in a weekly or monthly calendar</p>
+                  </div>
+              </div>
+              <div class="page-card calendar-toolbar">
+                  <div class="calendar-nav">
+                      <button class="btn-today">Today</button>
+                      <button class="icon-btn" aria-label="Previous week"><i data-lucide="chevron-left"></i></button>
+                      <button class="icon-btn" aria-label="Next week"><i data-lucide="chevron-right"></i></button>
+                      <span class="calendar-month">November 2025</span>
+                  </div>
+                  <div class="view-toggle">
+                      <button class="toggle-btn" data-view="month">Month</button>
+                      <button class="toggle-btn active" data-view="week">Week</button>
+                  </div>
+              </div>
+              <div class="page-card" style="padding-top: 0;">
+                  <div class="calendar-week-view" id="calendar-week-view">
+                      <p style="text-align:center;color:#999;padding:40px;">Loading calendar...</p>
+                  </div>
+                  <div id="calendar-month-view">
+                      <i data-lucide="calendar-search" style="width: 48px; height: 48px; margin-bottom: 16px;"></i>
+                      <p>Full monthly calendar view coming soon.</p>
+                      <p>(Currently showing Week View)</p>
+                  </div>
+              </div>
+          </div>
+      </main>
+  </div> <div id="earnings-view" class="view-section">
+      <main class="page-main">
+          <div class="container">
+              <div class="page-header">
+                  <button class="icon-btn" data-page="dashboard"> <i data-lucide="arrow-left"></i> </button>
+                  <div class="page-header-icon" style="background-color: var(--brand); color: white;"> <i data-lucide="dollar-sign"></i> </div>
+                  <div>
+                      <h1 class="page-title">Earnings</h1>
+                      <p class="page-subtitle">Track your income and set financial goals</p>
+                  </div>
+              </div>
+              
+              <div class="page-card">
+                  <div class="earning-summary-grid">
+                      <div class="earning-stat-box">
+                          <h2 class="stat-value" id="total-earnings-value">--</h2>
+                          <p class="stat-label">Total Earnings</p>
+                          <h2 class="stat-value" style="margin-top: 24px;" id="total-jobs-value">--</h2>
+                          <p class="stat-label">Jobs Completed</p>
+                      </div>
+                      <div class="earning-goal-box">
+                          <div class="goal-header"> <span class="goal-title">Monthly Goal</span> <button class="btn-edit-goal">Edit Goal</button> </div>
+                          <progress class="goal-progress" id="goal-progress-bar" value="0" max="100"></progress>
+                          <p class="goal-text" id="goal-progress-text">Loading...</p>
+                      </div>
+                  </div>
+              </div>
+
+              <div class="page-card">
+                  <h3 class="feed-title" style="margin-top: 0;">Pending Earnings Confirmation</h3>
+                  <p class="page-subtitle" style="font-size: 15px; margin: -12px 0 16px 0;">Confirm payment for completed jobs to add them to your history.</p>
+                  
+                  <div class="member-list" id="pending-earnings-list">
+                      <p style="text-align:center;color:#999;padding:20px;">Loading pending earnings...</p>
+                  </div>
+              </div>
+              
+              <div class="page-card">
+                  <h3 class="feed-title" style="margin-top: 0;">Transaction History</h3>
+                  <div class="search-row">
+                      <input id="transaction-search" class="search-input" placeholder="Search by Name, Flat No, or Phone..." />
+                  </div>
+                  <div class="member-list" id="transaction-list">
+                      <p style="text-align:center;color:#999;padding:20px;">Loading transactions...</p>
+                  </div>
+                  
+                  <p id="no-transactions-found" style="text-align: center; display: none; color: var(--muted); margin-top: 24px;">No transactions found matching your search.</p>
+
+              </div>
+          </div>
+      </main>
+  </div> <div id="info-view" class="view-section">
+      <main class="info-main">
+          <div class="info-container">
+              <div class="info-header"><h2 class="info-title" id="info-page-title">Page Title</h2><div class="info-subtitle" id="info-page-subtitle">Subtitle</div></div>
+              <div class="info-content" id="info-page-content"></div>
+              <div style="margin-top: 30px;"><button class="btn-primary" data-page="dashboard">Back to Home</button></div>
+          </div>
+      </main>
+  </div>
+
+
+  {% include '_footer.html' %}
+  
+</div> <div id="schedule-modal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Confirm & Schedule Booking</h3>
+            <button class="icon-btn modal-close-btn"><i data-lucide="x"></i></button>
+        </div>
+        <div class="modal-body">
+            <p>Please select a date and time for this service request.</p>
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label for="booking-date">Date</label>
+                    <input type="date" id="booking-date" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="booking-time">Time</label>
+                    <input type="time" id="booking-time" class="form-input">
+                </div>
+            </div>
+            <div class="form-button-row">
+                <button class="btn-primary" id="confirm-schedule-btn">Confirm Booking</button>
+                <button class="btn-cancel modal-close-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
