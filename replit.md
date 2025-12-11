@@ -16,7 +16,35 @@ Urvoic is a comprehensive community management platform designed to connect resi
 
 ## Recent Changes (December 2025)
 
-### Latest Updates (December 7, 2025)
+### Latest Updates (December 11, 2025)
+- **Phase 1 - Database & Universal Fixes**:
+  - Verified database pool settings (SQLALCHEMY_POOL_SIZE=5, SQLALCHEMY_MAX_OVERFLOW=5) are optimal
+  - Activity logs and rating functionality verified working correctly
+
+- **Phase 2 - Admin Dashboard Fixes**:
+  - Changed subtitle from "Upavan Apartment" to "Apartment/Society"
+  - Updated loadVisitorLog() to fetch from /api/visitor-logs/history endpoint
+  - Enhanced /api/visitor-logs/history response to include is_pre_approved, expected_date, expected_time fields
+  - Added dynamic pending count update to visitor tab button
+  - Verified displayChatGroups correctly filters to show only "Entire Society" group
+  - Confirmed manage members correctly filters by user_type and is_approved
+
+- **Phase 3 - Resident Dashboard Fixes**:
+  - Removed hardcoded dummy announcement cards from HTML template
+  - Updated maintenance request submission to properly handle is_public flag
+  - Added renderPublicRequests() to fetch from /api/maintenance-requests?type=public
+  - Updated renderPrivateRequests() to fetch from /api/maintenance-requests?type=private
+  - Enhanced star rating visual feedback in initReviewStars()
+  - Reviews now POST to /api/reviews and render immediately
+
+- **Phase 4 - Guard Dashboard Fixes**:
+  - Updated /api/visitor-log to create Notification for resident when guard requests permission
+  - Updated /api/shift-reports POST to create notifications for all approved admins
+  - Created new /api/guard/residents endpoint returning residents with family members and vehicles
+  - Enhanced displayResidentsForGuard() to show expandable family/vehicle sections
+  - Added Email and Society fields to guard profile page
+
+### Previous Updates (December 7, 2025)
 - **Admin Dashboard Fixes**:
   - Fixed displayApprovedResidents to filter by user_type === 'resident' to exclude guards
   - Updated displayApprovedBusinesses to use 'approved-businesses-list' container and show owner info
