@@ -1498,6 +1498,55 @@ def get_residents():
     })
 
 
+@app.route('/api/guard/residents', methods=['GET'])
+@login_required
+def get_residents_for_guard():
+    if current_user.role not in ['admin', 'guard']:
+        return jsonify({
+            'success': False,
+            'message': 'Unauthorized'
+        }), 403
+    
+    residents = User.query.filter_by(
+        society_name=current_user.society_name,
+        user_type='resident'
+    ).all()
+    
+    result = []
+    for res in residents:
+        family_members = FamilyMember.query.filter_by(resident_id=res.id).all()
+        vehicles = Vehicle.query.filter_by(resident_id=res.id).all()
+        
+        result.append({
+            'id': res.id,
+            'full_name': res.full_name,
+            'email': res.email,
+            'phone': res.phone,
+            'flat_number': res.flat_number,
+            'role': res.role,
+            'profile_photo': res.profile_photo,
+            'family_members': [{
+                'id': fm.id,
+                'name': fm.name,
+                'relationship': fm.relationship,
+                'age': fm.age,
+                'phone': fm.phone
+            } for fm in family_members],
+            'vehicles': [{
+                'id': v.id,
+                'vehicle_type': v.vehicle_type,
+                'vehicle_number': v.vehicle_number,
+                'vehicle_model': v.vehicle_model,
+                'vehicle_color': v.vehicle_color
+            } for v in vehicles]
+        })
+    
+    return jsonify({
+        'success': True,
+        'residents': result
+    })
+
+
 @app.route('/api/guards', methods=['GET'])
 @login_required
 def get_guards():
@@ -1629,6 +1678,15 @@ def create_visitor_log():
     log_activity('Visitor Entry', f"Guard logged visitor {data['visitor_name']} for flat {data['flat_number']}", current_user)
     
     if resident:
+        create_notification(
+            user_id=resident.id,
+            title='Visitor Permission Request',
+            message=f"Visitor {data['visitor_name']} ({data.get('purpose', 'Guest')}) is at the gate requesting entry to Flat {data['flat_number']}. Guard: {current_user.full_name}",
+            notification_type='visitor_permission',
+            society_name=current_user.society_name,
+            related_id=visitor.id
+        )
+        
         socketio.emit('new_visitor_pending', {
             'visitor_id': visitor.id,
             'visitor_name': visitor.visitor_name,
@@ -2235,20 +2293,47 @@ def create_shift_report():
     
     data = request.get_json()
     
-    visitors_count = VisitorLog.query.filter_by(
-        guard_id=current_user.id,
-        society_name=current_user.society_name
-    ).filter(
-        VisitorLog.created_at >= datetime.strptime(data['shift_date'], '%Y-%m-%d')
-    ).count()
+    shift_date = data.get('shift_date', datetime.utcnow().strftime('%Y-%m-%d'))
+    
+    try:
+        visitors_count = VisitorLog.query.filter_by(
+            guard_id=current_user.id,
+            society_name=current_user.society_name
+        ).filter(
+            VisitorLog.created_at >= datetime.strptime(shift_date, '%Y-%m-%d')
+        ).count()
+    except:
+        visitors_count = 0
+    
+    shift_start = None
+    if data.get('shift_start_time'):
+        try:
+            shift_start = datetime.strptime(data['shift_start_time'], '%Y-%m-%dT%H:%M')
+        except:
+            try:
+                shift_start = datetime.strptime(data['shift_start_time'], '%Y-%m-%d %H:%M:%S')
+            except:
+                shift_start = None
+    
+    shift_end = None
+    if data.get('shift_end_time'):
+        try:
+            shift_end = datetime.strptime(data['shift_end_time'], '%Y-%m-%dT%H:%M')
+        except:
+            try:
+                shift_end = datetime.strptime(data['shift_end_time'], '%Y-%m-%d %H:%M:%S')
+            except:
+                shift_end = datetime.utcnow()
+    else:
+        shift_end = datetime.utcnow()
     
     report = ShiftReport(
         guard_id=current_user.id,
         guard_name=current_user.full_name,
         society_name=current_user.society_name,
-        shift_date=data['shift_date'],
-        shift_start_time=datetime.strptime(data['shift_start_time'], '%Y-%m-%d %H:%M:%S') if 'shift_start_time' in data else None,
-        shift_end_time=datetime.utcnow(),
+        shift_date=shift_date,
+        shift_start_time=shift_start,
+        shift_end_time=shift_end,
         total_visitors=visitors_count,
         total_service_providers=data.get('total_service_providers', 0),
         incidents=data.get('incidents'),
@@ -2258,7 +2343,30 @@ def create_shift_report():
     db.session.add(report)
     db.session.commit()
     
-    log_activity('Shift Report', f"Guard submitted shift report for {data['shift_date']}", current_user)
+    log_activity('Shift Report', f"Guard submitted shift report for {shift_date}", current_user)
+    
+    admins = User.query.filter_by(
+        society_name=current_user.society_name,
+        role='admin',
+        is_approved=True
+    ).all()
+    
+    for admin in admins:
+        create_notification(
+            user_id=admin.id,
+            title='New Shift Report Submitted',
+            message=f"Guard {current_user.full_name} has submitted a shift report for {shift_date}. Total visitors: {visitors_count}. Incidents: {data.get('incidents') or 'None reported'}",
+            notification_type='shift_report',
+            society_name=current_user.society_name,
+            related_id=report.id
+        )
+    
+    socketio.emit('new_shift_report', {
+        'report_id': report.id,
+        'guard_name': current_user.full_name,
+        'shift_date': shift_date,
+        'total_visitors': visitors_count
+    }, room=f"society_{current_user.society_name}")
     
     return jsonify({
         'success': True,
@@ -2646,7 +2754,9 @@ def get_all_residents():
             'email': u.email,
             'phone': u.phone,
             'flat_number': u.flat_number,
-            'role': u.role
+            'role': u.role,
+            'user_type': u.user_type,
+            'is_approved': u.is_approved
         } for u in residents]
     })
 
@@ -2730,7 +2840,9 @@ def get_all_guards():
             'id': u.id,
             'full_name': u.full_name,
             'email': u.email,
-            'phone': u.phone
+            'phone': u.phone,
+            'user_type': u.user_type,
+            'is_approved': u.is_approved
         } for u in guards]
     })
 
@@ -2914,16 +3026,26 @@ def admin_pre_approve_visitor():
 @app.route('/api/visitors/pending', methods=['GET'])
 @login_required
 def get_pending_visitors_admin():
-    if current_user.role != 'admin':
+    if current_user.role not in ['admin', 'guard']:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     
     pending = VisitorLog.query.filter_by(
         society_name=current_user.society_name,
         permission_status='pending'
-    ).all()
+    ).order_by(VisitorLog.created_at.desc()).all()
     
     return jsonify({
         'success': True,
+        'visitors': [{
+            'id': v.id,
+            'visitor_name': v.visitor_name,
+            'visitor_phone': v.visitor_phone,
+            'purpose': v.purpose,
+            'flat_number': v.flat_number,
+            'permission_status': v.permission_status,
+            'entry_time': v.entry_time.isoformat() if v.entry_time else None,
+            'created_at': v.created_at.isoformat() if v.created_at else None
+        } for v in pending],
         'pending_visitors': [{
             'id': v.id,
             'visitor_name': v.visitor_name,
@@ -3351,7 +3473,11 @@ def get_visitor_history():
             'status': v.status,
             'permission_status': v.permission_status,
             'entry_time': v.entry_time.isoformat() if v.entry_time else None,
-            'exit_time': v.exit_time.isoformat() if v.exit_time else None
+            'exit_time': v.exit_time.isoformat() if v.exit_time else None,
+            'is_pre_approved': v.is_pre_approved,
+            'expected_date': v.expected_date,
+            'expected_time': v.expected_time,
+            'created_at': v.created_at.isoformat() if v.created_at else None
         } for v in visitors]
     })
 

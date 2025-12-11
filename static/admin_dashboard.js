@@ -1495,7 +1495,7 @@ function deleteRequest(requestId) {
 }
 
 function loadVisitorLog() {
-    fetch('/api/visitor-log')
+    fetch('/api/visitor-logs/history')
         .then(res => res.json())
         .then(data => {
             if (data.success) {
@@ -1509,6 +1509,11 @@ function loadVisitorLog() {
         .then(data => {
             if (data.success) {
                 displayPendingVisitors(data.pending_visitors || []);
+                const pendingCount = (data.pending_visitors || []).length;
+                const pendingTab = document.querySelector('#visitorToggle .toggle-btn[data-target="pending-requests-list"]');
+                if (pendingTab) {
+                    pendingTab.textContent = `Pending Requests (${pendingCount})`;
+                }
             }
         })
         .catch(err => console.log('Error loading pending visitors'));

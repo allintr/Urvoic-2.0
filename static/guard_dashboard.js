@@ -259,19 +259,24 @@ function loadMyProfileData() {
                 const user = data.user;
                 
                 const nameEl = document.querySelector('#my-profile-view .profile-detail-item[data-field-name="Name"] .profile-detail-value');
-                if (nameEl) nameEl.textContent = user.full_name || 'N/A';
+                if (nameEl) {
+                    nameEl.textContent = user.full_name || 'N/A';
+                    const input = document.querySelector('#my-profile-view .profile-detail-item[data-field-name="Name"] .profile-edit-input');
+                    if (input) input.value = user.full_name || '';
+                }
                 
                 const emailEl = document.querySelector('#my-profile-view .profile-detail-item[data-field-name="Email"] .profile-detail-value');
                 if (emailEl) emailEl.textContent = user.email || 'N/A';
                 
                 const phoneEl = document.querySelector('#my-profile-view .profile-detail-item[data-field-name="Phone"] .profile-detail-value');
-                if (phoneEl) phoneEl.textContent = user.phone || 'N/A';
+                if (phoneEl) {
+                    phoneEl.textContent = user.phone || 'N/A';
+                    const input = document.querySelector('#my-profile-view .profile-detail-item[data-field-name="Phone"] .profile-edit-input');
+                    if (input) input.value = user.phone || '';
+                }
                 
                 const roleEl = document.querySelector('#my-profile-view .profile-detail-item[data-field-name="Role"] .profile-detail-value');
                 if (roleEl) roleEl.textContent = user.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'Guard';
-                
-                const flatEl = document.querySelector('#my-profile-view .profile-detail-item[data-field-name="Flat Number"] .profile-detail-value');
-                if (flatEl) flatEl.textContent = user.flat_number || 'N/A';
                 
                 const societyEl = document.querySelector('#my-profile-view .profile-detail-item[data-field-name="Society"] .profile-detail-value');
                 if (societyEl) societyEl.textContent = user.society_name || 'N/A';
@@ -615,39 +620,75 @@ function initShiftReportPage() {
     if (form) {
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            showToast('Shift Report Submitted!', 'success');
-            // In a real app, you'd send this data to a server
-            form.reset();
-            showGuardDashboardPage();
+            
+            const shiftStart = document.getElementById('shift-start')?.value || '';
+            const shiftEnd = document.getElementById('shift-end')?.value || '';
+            const shiftType = document.getElementById('shift-type')?.value || '';
+            const incidents = document.getElementById('shift-incidents')?.value || '';
+            const notes = document.getElementById('shift-notes')?.value || '';
+            const serviceProviders = document.getElementById('service-providers-count')?.value || 0;
+            
+            const today = new Date().toISOString().split('T')[0];
+            
+            fetch('/api/shift-reports', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    shift_date: today,
+                    shift_start_time: shiftStart,
+                    shift_end_time: shiftEnd,
+                    shift_type: shiftType,
+                    incidents: incidents,
+                    notes: notes,
+                    total_service_providers: parseInt(serviceProviders) || 0
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Shift Report Submitted! Admins have been notified.', 'success');
+                    form.reset();
+                    showGuardDashboardPage();
+                    addGuardActivity('Shift report submitted');
+                } else {
+                    showToast(data.message || 'Failed to submit shift report', 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Error submitting shift report:', err);
+                showToast('Failed to submit shift report', 'error');
+            });
         });
     }
 }
 
 // --- NEW: Residents Page Logic ---
 function initResidentsPage() {
-    const searchInput = document.getElementById('resident-search-input');
-    if (!searchInput) return;
+    loadResidentsForGuard();
     
-    const residentCards = document.querySelectorAll('.resident-card');
-    const noResultsEl = document.getElementById('no-resident-found');
-
-    // Search functionality
-    searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase();
-        let foundOne = false;
-        
-        residentCards.forEach(card => {
-            const searchTerm = card.dataset.searchTerm.toLowerCase();
-            if (searchTerm.includes(query)) {
-                card.style.display = 'block';
-                foundOne = true;
-            } else {
-                card.style.display = 'none';
+    const searchInput = document.getElementById('resident-search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const residentCards = document.querySelectorAll('.resident-card');
+            const noResultsEl = document.getElementById('no-resident-found');
+            let foundOne = false;
+            
+            residentCards.forEach(card => {
+                const searchTerm = (card.dataset.searchTerm || '').toLowerCase();
+                if (searchTerm.includes(query)) {
+                    card.style.display = 'block';
+                    foundOne = true;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            if (noResultsEl) {
+                noResultsEl.style.display = foundOne ? 'none' : 'block';
             }
         });
-        
-        noResultsEl.style.display = foundOne ? 'none' : 'block';
-    });
+    }
     
     // Event delegation for status toggles
     const list = document.getElementById('resident-directory-list');
@@ -1113,18 +1154,28 @@ function displayShiftHistory(shifts) {
 }
 
 function loadResidentsForGuard() {
-    fetch('/api/admin/residents/all')
+    const container = document.getElementById('resident-directory-list');
+    if (!container) return;
+    
+    container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">Loading residents...</p>';
+    
+    fetch('/api/guard/residents')
         .then(res => res.json())
         .then(data => {
             if (data.success) {
                 displayResidentsForGuard(data.residents || []);
+            } else {
+                container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">Failed to load residents</p>';
             }
         })
-        .catch(err => console.log('Error loading residents'));
+        .catch(err => {
+            console.log('Error loading residents:', err);
+            container.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">Error loading residents</p>';
+        });
 }
 
 function displayResidentsForGuard(residents) {
-    const container = document.getElementById('guard-residents-list');
+    const container = document.getElementById('resident-directory-list');
     if (!container) return;
     
     if (residents.length === 0) {
@@ -1132,17 +1183,66 @@ function displayResidentsForGuard(residents) {
         return;
     }
     
-    container.innerHTML = residents.map(r => `
-        <div class="resident-card">
-            <div class="resident-info">
-                <div class="resident-avatar">${r.full_name.charAt(0).toUpperCase()}</div>
-                <div>
-                    <div class="resident-name">${r.full_name}</div>
-                    <div class="resident-detail">Flat ${r.flat_number} | ${r.phone}</div>
+    container.innerHTML = residents.map(r => {
+        const familyCount = r.family_members ? r.family_members.length : 0;
+        const vehicleCount = r.vehicles ? r.vehicles.length : 0;
+        const searchTerm = `${r.full_name} ${r.flat_number} ${r.phone} ${r.email}`;
+        
+        let familyHtml = '';
+        if (r.family_members && r.family_members.length > 0) {
+            familyHtml = `
+                <div class="family-members-section" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">
+                    <strong style="font-size: 12px; color: #666;">Family Members:</strong>
+                    <ul style="margin: 4px 0 0 0; padding-left: 16px; font-size: 12px; color: #555;">
+                        ${r.family_members.map(fm => `<li>${fm.name} (${fm.relationship}${fm.phone ? ' - ' + fm.phone : ''})</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+        
+        let vehicleHtml = '';
+        if (r.vehicles && r.vehicles.length > 0) {
+            vehicleHtml = `
+                <div class="vehicles-section" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">
+                    <strong style="font-size: 12px; color: #666;">Vehicles:</strong>
+                    <ul style="margin: 4px 0 0 0; padding-left: 16px; font-size: 12px; color: #555;">
+                        ${r.vehicles.map(v => `<li>${v.vehicle_type}: ${v.vehicle_number}${v.vehicle_model ? ' (' + v.vehicle_model + ')' : ''}${v.vehicle_color ? ' - ' + v.vehicle_color : ''}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+        
+        return `
+            <div class="resident-card page-card" data-search-term="${searchTerm}" style="margin-bottom: 16px; padding: 16px;">
+                <div class="resident-info" style="display: flex; align-items: flex-start; gap: 12px;">
+                    <div class="profile-pic-placeholder-sm" style="background-color: var(--blue-bg); color: var(--blue); flex-shrink: 0;">
+                        ${r.full_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div style="flex: 1;">
+                        <div class="resident-name" style="font-weight: 600; font-size: 16px;">${r.full_name}</div>
+                        <div class="resident-detail" style="color: #666; font-size: 14px; margin-top: 4px;">
+                            <strong>Flat:</strong> ${r.flat_number || 'N/A'} | <strong>Phone:</strong> ${r.phone || 'N/A'}
+                        </div>
+                        <div style="color: #888; font-size: 13px; margin-top: 2px;">
+                            <strong>Email:</strong> ${r.email || 'N/A'}
+                        </div>
+                        <div style="margin-top: 8px; font-size: 12px; color: #666;">
+                            <span style="background: #e8f5e9; padding: 2px 8px; border-radius: 12px; margin-right: 8px;">
+                                <i data-lucide="users" style="width: 12px; height: 12px; vertical-align: middle;"></i> ${familyCount} family
+                            </span>
+                            <span style="background: #e3f2fd; padding: 2px 8px; border-radius: 12px;">
+                                <i data-lucide="car" style="width: 12px; height: 12px; vertical-align: middle;"></i> ${vehicleCount} vehicles
+                            </span>
+                        </div>
+                        ${familyHtml}
+                        ${vehicleHtml}
+                    </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
+    
+    lucide.createIcons();
 }
 
 function navigateToInfo(pageKey) {

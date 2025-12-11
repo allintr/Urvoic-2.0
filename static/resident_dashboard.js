@@ -329,11 +329,13 @@ function showDashboardPage() {
 function showMaintenancePage() {
     navigateToView('maintenance-view');
     loadResidentMaintenanceRequests();
+    renderPublicRequests();
 }
 
 function showReviewPage() {
     navigateToView('review-view');
     loadBusinessesForReview();
+    loadPublicReviews();
 }
 
 function showVisitorLogPage() { 
@@ -506,7 +508,7 @@ function loadResidentAnnouncements() {
 }
 
 function displayResidentAnnouncements(announcements) {
-    const container = document.getElementById('resident-announcements-list');
+    const container = document.querySelector('.announcement-feed');
     if (!container) return;
     
     if (announcements.length === 0) {
@@ -516,15 +518,23 @@ function displayResidentAnnouncements(announcements) {
     
     container.innerHTML = announcements.map(a => {
         const date = new Date(a.created_at);
-        const dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+        const dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         return `
             <div class="announcement-card">
-                <h4>${a.title}</h4>
-                <p>${a.content}</p>
-                <span class="announcement-date">${dateStr}</span>
+                <div class="history-icon icon-info" style="background-color: var(--green-bg); color: var(--brand);">
+                    <i data-lucide="megaphone"></i>
+                </div>
+                <div class="announcement-content">
+                    <div class="announcement-title">${a.title}</div>
+                    <div class="announcement-date">${dateStr}</div>
+                    <div class="announcement-body">
+                        <p>${a.content}</p>
+                    </div>
+                </div>
             </div>
         `;
     }).join('');
+    lucide.createIcons();
 }
 
 function loadBusinessesForReview() {
@@ -821,31 +831,123 @@ function initRequestTypeToggle() {
 
 function renderPrivateRequests() {
     const grid = document.getElementById('private-requests-grid');
-    const myReqs = maintenanceRequests.filter(r => r.scope === 'private');
     
-    if (myReqs.length === 0) {
-        grid.innerHTML = '<p style="text-align:center; color:var(--muted); padding:20px;">No private requests yet.</p>';
-        return;
-    }
+    fetch('/api/maintenance-requests?type=private')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const myReqs = data.requests || [];
+                
+                if (myReqs.length === 0) {
+                    grid.innerHTML = '<p style="text-align:center; color:var(--muted); padding:20px;">No private requests yet.</p>';
+                    return;
+                }
+                
+                grid.innerHTML = myReqs.map(req => `
+                    <div class="request-card">
+                        <div class="request-header">
+                            <div class="profile-pic-placeholder-sm" style="background-color: #eaf2ff;">P</div>
+                            <div>
+                                <span class="request-user">Your Request</span>
+                                <span class="request-flat">${req.title}</span>
+                            </div>
+                            <span class="request-status status-${req.status || 'pending'}">${req.status || 'Pending'}</span>
+                        </div>
+                        <div class="request-body">
+                            <p>${req.description}</p>
+                        </div>
+                        <div class="request-actions">
+                            ${req.assigned_business_name ? `<span style="font-size:12px; color:var(--brand);">Assigned to: ${req.assigned_business_name}</span>` : '<span style="font-size:12px; color:var(--muted);">Not assigned</span>'}
+                        </div>
+                    </div>
+                `).join('');
+            }
+        })
+        .catch(err => console.log('Error loading private requests'));
+}
+
+function renderPublicRequests() {
+    const grid = document.getElementById('public-requests-grid');
     
-    grid.innerHTML = myReqs.map(req => `
-        <div class="request-card">
-            <div class="request-header">
-                <div class="profile-pic-placeholder-sm" style="background-color: #eaf2ff;">P</div>
-                <div>
-                    <span class="request-user">Your Request</span>
-                    <span class="request-flat">${req.category}</span>
-                </div>
-                <span class="request-status status-${req.status || 'pending'}">${req.status || 'Pending'}</span>
-            </div>
-            <div class="request-body">
-                <p>${req.title}</p>
-            </div>
-            <div class="request-actions">
-                ${req.provider ? `<span style="font-size:12px; color:var(--brand);">Assigned to: ${req.provider}</span>` : '<span style="font-size:12px; color:var(--muted);">Not assigned</span>'}
-            </div>
-        </div>
-    `).join('');
+    fetch('/api/maintenance-requests?type=public')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const publicReqs = data.requests || [];
+                
+                if (publicReqs.length === 0) {
+                    grid.innerHTML = '<p style="text-align:center; color:var(--muted); padding:20px;">No public requests yet.</p>';
+                    return;
+                }
+                
+                grid.innerHTML = publicReqs.map(req => {
+                    const date = new Date(req.created_at);
+                    const dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+                    return `
+                        <div class="request-card">
+                            <div class="request-header">
+                                <div class="profile-pic-placeholder-sm" style="background-color: #eaf2ff;">R</div>
+                                <div>
+                                    <span class="request-user">Flat ${req.flat_number || 'N/A'}</span>
+                                    <span class="request-flat">${dateStr}</span>
+                                </div>
+                                <span class="request-status status-${req.status || 'pending'}">${(req.status || 'Open').replace('_', ' ')}</span>
+                            </div>
+                            <div class="request-body">
+                                <h4>${req.title}</h4>
+                                <p>${req.description}</p>
+                            </div>
+                            <div class="request-actions">
+                                ${req.engaged ? '<span style="font-size:12px; color:var(--brand);">Engaged</span>' : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                lucide.createIcons();
+            }
+        })
+        .catch(err => console.log('Error loading public requests'));
+}
+
+function loadPublicReviews() {
+    const grid = document.getElementById('public-reviews-grid');
+    if (!grid) return;
+    
+    fetch('/api/reviews')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const reviews = data.reviews || [];
+                
+                if (reviews.length === 0) {
+                    grid.innerHTML = '<p style="text-align:center; color:var(--muted); padding:20px;">No reviews yet. Be the first to share your feedback!</p>';
+                    return;
+                }
+                
+                grid.innerHTML = reviews.map(r => {
+                    const date = new Date(r.created_at);
+                    const dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                    const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+                    return `
+                        <div class="review-card">
+                            <div class="review-header">
+                                <div class="profile-pic-placeholder-sm">R</div>
+                                <div>
+                                    <span class="review-user">Resident</span>
+                                    <span class="review-date">${dateStr}</span>
+                                </div>
+                            </div>
+                            <div class="review-rating" style="color: var(--orange); font-size: 16px;">${stars}</div>
+                            <div class="review-body">
+                                <p>${r.review_text}</p>
+                            </div>
+                            ${r.business_comment ? `<div class="review-reply"><strong>Business Reply:</strong> ${r.business_comment}</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+            }
+        })
+        .catch(err => console.log('Error loading reviews'));
 }
 
 // --- QR Code Generation ---
@@ -954,65 +1056,123 @@ function handleSearch() {
 }
 
 
-// --- Form Simulation Logic ---
+// --- Form Submission Logic ---
 function handleFormSubmit(event, successMsg) {
     event.preventDefault(); 
     const form = event.target;
     const btn = form.querySelector('.form-submit-btn');
+    
+    if (!btn) return;
+    const originalText = btn.innerText;
+    btn.classList.add('loading');
+    btn.innerText = 'Loading...';
     
     // -- SPECIAL LOGIC: Save Maintenance Request --
     const catInput = form.querySelector('#category'); 
     if (catInput && document.getElementById('maintenanceScopeToggle')) {
         const scopeBtn = document.querySelector('#maintenanceScopeToggle .toggle-btn.active');
         const descInput = form.querySelector('#description');
+        const isPublic = scopeBtn.dataset.value === 'society';
         
-        maintenanceRequests.unshift({
-            id: Date.now(),
-            category: catInput.value,
-            title: descInput.value,
-            date: 'Just now',
-            status: 'Pending',
-            scope: scopeBtn.dataset.value // 'society' or 'private'
+        fetch('/api/maintenance-requests', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title: catInput.options[catInput.selectedIndex].text,
+                description: descInput.value,
+                request_type: isPublic ? 'public' : 'private',
+                is_public: isPublic
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            btn.classList.remove('loading');
+            btn.innerText = originalText;
+            if (data.success) {
+                showToast('Request Submitted!', 'success');
+                form.reset();
+                loadResidentMaintenanceRequests();
+                renderPublicRequests();
+                if (!isPublic) {
+                    renderPrivateRequests();
+                }
+            } else {
+                showToast(data.message || 'Failed to submit request', 'error');
+            }
+        })
+        .catch(err => {
+            btn.classList.remove('loading');
+            btn.innerText = originalText;
+            showToast('Error submitting request', 'error');
         });
-        
-        // Refresh private requests if visible
-        if (document.getElementById('private-requests-section').style.display !== 'none') {
-            renderPrivateRequests();
-        }
+        return;
     }
     
     // -- SPECIAL LOGIC: Save Review --
     const reviewCat = form.querySelector('#review-category');
     if (reviewCat) {
-        const rating = document.getElementById('starRatingInput')?.value || 0;
+        const rating = parseInt(document.getElementById('starRatingInput')?.value) || 0;
         const desc = form.querySelector('#review-description')?.value;
-        if (rating && desc) {
-            showToast('Your review has been published!', 'success');
+        const category = reviewCat.value;
+        
+        if (rating < 1) {
+            btn.classList.remove('loading');
+            btn.innerText = originalText;
+            showToast('Please select a star rating', 'error');
+            return;
         }
+        
+        fetch('/api/reviews', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                rating: rating,
+                review_text: desc,
+                category: category,
+                business_id: 1
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            btn.classList.remove('loading');
+            btn.innerText = originalText;
+            if (data.success) {
+                showToast('Your review has been published!', 'success');
+                form.reset();
+                const starContainer = document.getElementById('reviewStarRating');
+                if (starContainer) {
+                    starContainer.querySelectorAll('i').forEach(s => {
+                        s.classList.remove('selected');
+                        s.style.fill = 'none';
+                        s.style.stroke = 'var(--muted)';
+                    });
+                    document.getElementById('starRatingInput').value = '0';
+                }
+                loadPublicReviews();
+            } else {
+                showToast(data.message || 'Failed to submit review', 'error');
+            }
+        })
+        .catch(err => {
+            btn.classList.remove('loading');
+            btn.innerText = originalText;
+            showToast('Error submitting review', 'error');
+        });
+        return;
     }
 
-    if (!btn) return;
-    const originalText = btn.innerText;
-    btn.classList.add('loading');
-    btn.innerText = 'Loading...';
+    // Default form behavior for other forms
     setTimeout(() => {
         btn.classList.remove('loading');
         btn.innerText = originalText;
         showToast(successMsg, 'success');
-        event.target.reset(); // Clear the form
+        event.target.reset();
         
         // --- Reset privacy toggle ---
         const privacyToggle = document.getElementById('privacyToggle');
         if (privacyToggle) {
             privacyToggle.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             privacyToggle.querySelector('[data-value="private"]').classList.add('active');
-        }
-        
-        // Reset review stars
-        const starContainer = document.getElementById('reviewStarRating');
-        if (starContainer) {
-            starContainer.querySelectorAll('i').forEach(s => s.classList.remove('selected'));
-            document.getElementById('starRatingInput').value = '0'; // Reset hidden input
         }
         
         // Reset visitor toggle
@@ -1070,22 +1230,40 @@ function initReviewStars() {
 
     stars.forEach(star => {
         star.addEventListener('click', () => {
-            const rating = star.dataset.value;
+            const rating = parseInt(star.dataset.value);
             ratingInput.value = rating;
             stars.forEach((s, i) => {
-                s.classList.toggle('selected', i < rating);
+                if (i < rating) {
+                    s.classList.add('selected');
+                    s.style.fill = '#ff8c00';
+                    s.style.stroke = '#ff8c00';
+                } else {
+                    s.classList.remove('selected');
+                    s.style.fill = 'none';
+                    s.style.stroke = 'var(--muted)';
+                }
             });
         });
         star.addEventListener('mouseover', () => {
-            const rating = star.dataset.value;
+            const rating = parseInt(star.dataset.value);
             stars.forEach((s, i) => {
-                s.style.stroke = (i < rating) ? 'var(--star-yellow)' : 'var(--muted)';
+                if (i < rating) {
+                    s.style.stroke = '#ff8c00';
+                    s.style.fill = '#ff8c00';
+                } else {
+                    s.style.stroke = 'var(--muted)';
+                    s.style.fill = 'none';
+                }
             });
         });
         star.addEventListener('mouseout', () => {
-            const currentRating = ratingInput.value;
+            const currentRating = parseInt(ratingInput.value) || 0;
             stars.forEach((s, i) => {
-                if (i >= currentRating) {
+                if (i < currentRating) {
+                    s.style.fill = '#ff8c00';
+                    s.style.stroke = '#ff8c00';
+                } else {
+                    s.style.fill = 'none';
                     s.style.stroke = 'var(--muted)';
                 }
             });
