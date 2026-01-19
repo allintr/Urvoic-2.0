@@ -6,7 +6,6 @@ Pillow
 psycopg2-binary
 python-dotenv
 qrcode
-werkzeug
 gunicorn
 oauthlib
 requests
