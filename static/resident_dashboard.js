@@ -1669,6 +1669,8 @@ function initLogout() {
 }
 
 // --- Socket.IO for Real-Time Updates ---
+let currentVisitorId = null;
+
 function initSocketIO() {
     if (typeof io !== 'undefined') {
         const socket = io();
@@ -1697,12 +1699,50 @@ function initSocketIO() {
             }
         });
         
+        // --- THIS PART IS NEW: Open Modal on Request ---
         socket.on('new_visitor_pending', function(data) {
             console.log('New visitor pending:', data);
+            currentVisitorId = data.visitor_id;
+            
+            // Populate Modal Data
+            const nameEl = document.getElementById('req-visitor-name');
+            const purposeEl = document.getElementById('req-visitor-purpose');
+            const guardEl = document.getElementById('req-guard-name');
+            
+            if (nameEl) nameEl.textContent = data.visitor_name;
+            if (purposeEl) purposeEl.textContent = data.purpose;
+            if (guardEl) guardEl.textContent = data.guard_name;
+            
+            // Show Modal
+            const modal = document.getElementById('visitor-request-modal');
+            if (modal) modal.classList.add('active');
+            
             showToast(`Visitor ${data.visitor_name} is at the gate`, 'success');
             addResidentNotification('Visitor at Gate', `${data.visitor_name} is requesting entry to your flat`);
         });
     }
+}
+
+// --- ADD THIS FUNCTION: Handle Allow/Deny Click ---
+function respondToVisitor(action) {
+    if(!currentVisitorId) return;
+
+    fetch(`/api/visitor-log/${currentVisitorId}/permission`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: action })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const modal = document.getElementById('visitor-request-modal');
+            if (modal) modal.classList.remove('active');
+            showToast(`Visitor ${action === 'allow' ? 'Allowed' : 'Denied'}`, 'success');
+            loadResidentVisitors(); // Refresh list
+        } else {
+            showToast('Error updating status', 'error');
+        }
+    });
 }
 
 // --- SIDEBAR & NOTIFICATION SCRIPT ---

@@ -384,21 +384,21 @@ def signup():
     data = request.get_json()
 
     if User.query.filter_by(email=data['email']).first():
-        return jsonify({
-            'success': False,
-            'message': 'Email already registered'
-        }), 400
+        return jsonify({'success': False, 'message': 'Email already registered'}), 400
 
-    # Business gets instant approval, Resident/Guard need request
     is_approved = data['user_type'] == 'business'
     
+    # --- FIX: Clean & Uppercase Flat Number ---
+    clean_flat = data.get('flat_number', '').strip().upper() if data.get('flat_number') else None
+    clean_society = data.get('society_name', '').strip() if data.get('society_name') else None
+
     user = User(email=data['email'],
                 full_name=data['full_name'],
                 phone=data['phone'],
                 user_type=data['user_type'],
                 role=data.get('role', 'resident'),
-                society_name=data.get('society_name'),
-                flat_number=data.get('flat_number'),
+                society_name=clean_society,
+                flat_number=clean_flat,         # Using cleaned version
                 business_name=data.get('business_name'),
                 business_category=data.get('business_category'),
                 business_description=data.get('business_description'),
@@ -409,56 +409,27 @@ def signup():
     db.session.add(user)
     db.session.commit()
 
-    # Business joins multiple societies instantly with approval
     if user.user_type == 'business' and 'societies' in data:
         for society_name in data['societies']:
-            business_society = BusinessSociety(
-                business_id=user.id,
-                society_name=society_name
-            )
+            business_society = BusinessSociety(business_id=user.id, society_name=society_name)
             db.session.add(business_society)
         db.session.commit()
 
-    # Resident/Guard: Create approval request to ALL logged-in admins
     if not is_approved:
         approval_request = ApprovalRequest(
             requester_id=user.id,
             requester_name=user.full_name,
             requester_email=user.email,
             user_type=user.user_type,
-            society_name=data.get('society_name', '')
+            society_name=clean_society or ''
         )
         db.session.add(approval_request)
         db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Request submitted! Admin will review your application.',
-            'user': {
-                'id': user.id,
-                'name': user.full_name,
-                'email': user.email,
-                'user_type': user.user_type,
-                'is_approved': False
-            }
-        })
+        return jsonify({'success': True, 'message': 'Request submitted! Admin will review your application.'})
 
-    # Business: auto-login with instant approval
     session.permanent = True
     login_user(user, remember=True)
-
-    return jsonify({
-        'success': True,
-        'message': 'Account created successfully!',
-        'user': {
-            'id': user.id,
-            'name': user.full_name,
-            'email': user.email,
-            'user_type': user.user_type,
-            'role': user.role,
-            'is_approved': True
-        }
-    })
+    return jsonify({'success': True, 'message': 'Account created successfully!', 'user': {'id': user.id, 'name': user.full_name, 'user_type': user.user_type, 'role': user.role}})
 
 
 @app.route('/api/login', methods=['POST'])
@@ -1704,18 +1675,22 @@ def mark_all_notifications_read():
 @login_required
 def create_visitor_log():
     if current_user.role != 'guard':
-        return jsonify({
-            'success': False,
-            'message': 'Unauthorized'
-        }), 403
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     
     data = request.get_json()
     
-    resident = User.query.filter_by(
-        flat_number=data['flat_number'],
-        society_name=current_user.society_name,
-        user_type='resident'
-    ).first()
+    # --- FIX: Robust Matching ---
+    target_flat = data['flat_number'].strip()
+    
+    # Find ALL residents using case-insensitive search
+    residents = User.query.filter(
+        User.flat_number.ilike(target_flat),
+        User.society_name == current_user.society_name,
+        User.user_type == 'resident'
+    ).all()
+    
+    # Link to first resident found (for DB record)
+    primary_resident_id = residents[0].id if residents else None
     
     visitor = VisitorLog(
         visitor_name=data['visitor_name'],
@@ -1723,11 +1698,11 @@ def create_visitor_log():
         visitor_id_type=data.get('visitor_id_type'),
         visitor_id_number=data.get('visitor_id_number'),
         purpose=data.get('purpose'),
-        flat_number=data['flat_number'],
+        flat_number=target_flat,
         society_name=current_user.society_name,
         guard_id=current_user.id,
         guard_name=current_user.full_name,
-        resident_id=resident.id if resident else None,
+        resident_id=primary_resident_id,
         is_pre_approved_service=data.get('is_pre_approved_service', False),
         service_provider_name=data.get('service_provider_name'),
         status='created',
@@ -1737,32 +1712,30 @@ def create_visitor_log():
     db.session.add(visitor)
     db.session.commit()
     
-    log_activity('Visitor Entry', f"Guard logged visitor {data['visitor_name']} for flat {data['flat_number']}", current_user)
+    log_activity('Visitor Entry', f"Guard logged visitor {data['visitor_name']} for flat {target_flat}", current_user)
     
-    if resident:
-        create_notification(
-            user_id=resident.id,
-            title='Visitor Permission Request',
-            message=f"Visitor {data['visitor_name']} ({data.get('purpose', 'Guest')}) is at the gate requesting entry to Flat {data['flat_number']}. Guard: {current_user.full_name}",
-            notification_type='visitor_permission',
-            society_name=current_user.society_name,
-            related_id=visitor.id
-        )
-        
-        socketio.emit('new_visitor_pending', {
-            'visitor_id': visitor.id,
-            'visitor_name': visitor.visitor_name,
-            'visitor_phone': visitor.visitor_phone,
-            'purpose': visitor.purpose,
-            'flat_number': visitor.flat_number,
-            'guard_name': visitor.guard_name
-        }, room=f"user_{resident.id}")
-    
-    return jsonify({
-        'success': True,
-        'message': 'Visitor entry created',
-        'visitor_id': visitor.id
-    })
+    # --- FIX: Notify ALL residents found ---
+    if residents:
+        for resident in residents:
+            create_notification(
+                user_id=resident.id,
+                title='Visitor Permission Request',
+                message=f"Visitor {data['visitor_name']} ({data.get('purpose', 'Guest')}) is at the gate. Guard: {current_user.full_name}",
+                notification_type='visitor_permission',
+                society_name=current_user.society_name,
+                related_id=visitor.id
+            )
+            # Send Real-Time Alert
+            socketio.emit('new_visitor_pending', {
+                'visitor_id': visitor.id,
+                'visitor_name': visitor.visitor_name,
+                'visitor_phone': visitor.visitor_phone,
+                'purpose': visitor.purpose,
+                'flat_number': visitor.flat_number,
+                'guard_name': visitor.guard_name
+            }, room=f"user_{resident.id}")
+            
+    return jsonify({'success': True, 'message': 'Visitor entry created', 'visitor_id': visitor.id})
 
 
 @app.route('/api/visitor-log/<int:visitor_id>/ask-permission', methods=['POST'])
@@ -2209,46 +2182,25 @@ def add_family_member():
 def get_family_members():
     if current_user.role == 'guard':
         flat_number = request.args.get('flat_number')
-        if not flat_number:
-            return jsonify({
-                'success': False,
-                'message': 'Flat number required'
-            }), 400
-        
-        members = FamilyMember.query.filter_by(
-            society_name=current_user.society_name,
-            flat_number=flat_number
-        ).all()
+        if not flat_number: return jsonify({'success': False, 'message': 'Flat number required'}), 400
+        # Guard usually sends uppercase via JS, but safe to check ilike
+        members = FamilyMember.query.filter(FamilyMember.society_name==current_user.society_name, FamilyMember.flat_number.ilike(flat_number.strip())).all()
     elif current_user.user_type == 'resident':
         members = FamilyMember.query.filter_by(resident_id=current_user.id).all()
     elif current_user.role == 'admin':
         flat_number = request.args.get('flat_number')
         if flat_number:
-            members = FamilyMember.query.filter_by(
-                society_name=current_user.society_name,
-                flat_number=flat_number
+            # --- FIX: Case-insensitive search for Admin ---
+            members = FamilyMember.query.filter(
+                FamilyMember.society_name == current_user.society_name,
+                FamilyMember.flat_number.ilike(flat_number.strip())
             ).all()
         else:
-            members = FamilyMember.query.filter_by(
-                society_name=current_user.society_name
-            ).all()
+            members = FamilyMember.query.filter_by(society_name=current_user.society_name).all()
     else:
-        return jsonify({
-            'success': False,
-            'message': 'Unauthorized'
-        }), 403
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     
-    return jsonify({
-        'success': True,
-        'family_members': [{
-            'id': m.id,
-            'name': m.name,
-            'relationship': m.relationship,
-            'age': m.age,
-            'phone': m.phone,
-            'flat_number': m.flat_number
-        } for m in members]
-    })
+    return jsonify({'success': True, 'family_members': [{'id': m.id, 'name': m.name, 'relationship': m.relationship, 'age': m.age, 'phone': m.phone, 'flat_number': m.flat_number} for m in members]})
 
 
 @app.route('/api/family-members/<int:member_id>', methods=['DELETE'])
@@ -2307,46 +2259,24 @@ def add_vehicle():
 def get_vehicles():
     if current_user.role == 'guard':
         flat_number = request.args.get('flat_number')
-        if not flat_number:
-            return jsonify({
-                'success': False,
-                'message': 'Flat number required'
-            }), 400
-        
-        vehicles = Vehicle.query.filter_by(
-            society_name=current_user.society_name,
-            flat_number=flat_number
-        ).all()
+        if not flat_number: return jsonify({'success': False, 'message': 'Flat number required'}), 400
+        vehicles = Vehicle.query.filter(Vehicle.society_name==current_user.society_name, Vehicle.flat_number.ilike(flat_number.strip())).all()
     elif current_user.user_type == 'resident':
         vehicles = Vehicle.query.filter_by(resident_id=current_user.id).all()
     elif current_user.role == 'admin':
         flat_number = request.args.get('flat_number')
         if flat_number:
-            vehicles = Vehicle.query.filter_by(
-                society_name=current_user.society_name,
-                flat_number=flat_number
+            # --- FIX: Case-insensitive search for Admin ---
+            vehicles = Vehicle.query.filter(
+                Vehicle.society_name == current_user.society_name,
+                Vehicle.flat_number.ilike(flat_number.strip())
             ).all()
         else:
-            vehicles = Vehicle.query.filter_by(
-                society_name=current_user.society_name
-            ).all()
+            vehicles = Vehicle.query.filter_by(society_name=current_user.society_name).all()
     else:
-        return jsonify({
-            'success': False,
-            'message': 'Unauthorized'
-        }), 403
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     
-    return jsonify({
-        'success': True,
-        'vehicles': [{
-            'id': v.id,
-            'vehicle_type': v.vehicle_type,
-            'vehicle_number': v.vehicle_number,
-            'vehicle_model': v.vehicle_model,
-            'vehicle_color': v.vehicle_color,
-            'flat_number': v.flat_number
-        } for v in vehicles]
-    })
+    return jsonify({'success': True, 'vehicles': [{'id': v.id, 'vehicle_type': v.vehicle_type, 'vehicle_number': v.vehicle_number, 'vehicle_model': v.vehicle_model, 'vehicle_color': v.vehicle_color, 'flat_number': v.flat_number} for v in vehicles]})
 
 
 @app.route('/api/vehicles/<int:vehicle_id>', methods=['DELETE'])

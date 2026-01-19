@@ -254,7 +254,7 @@ async function handleResidentSignup(event) {
   const phone = inputs[2].value;
   const password = inputs[3].value;
   const societyName = inputs[4].value;
-  const flatNumber = inputs[5]?.value || '';
+  const flatNumber = (inputs[5]?.value || '').toUpperCase(); // Force Uppercase
   
   const roleBtn = form.querySelector('.role-toggle .role-btn.active');
   const role = roleBtn ? roleBtn.textContent.toLowerCase() : 'resident';

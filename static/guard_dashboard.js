@@ -390,6 +390,15 @@ function initVisitorLogPage() {
     loadPendingPermissions();
     loadVisitorHistory();
     
+    // --- ADD THIS: Auto-Uppercase ---
+    const flatInput = document.getElementById('visitor-flat');
+    if (flatInput) {
+        flatInput.addEventListener('input', function(e) {
+            this.value = this.value.toUpperCase();
+        });
+    }
+    // --------------------------------
+    
     const form = document.getElementById('check-in-form');
     if (form) {
         form.addEventListener('submit', (e) => {
@@ -1406,3 +1415,28 @@ function navigateToInfo(pageKey) {
         window.scrollTo(0, 0);
     }
 }
+// --- REAL-TIME UPDATES ---
+const socket = io();
+
+// Guard listens for Resident's Approval
+socket.on('visitor_permission_update', function(data) {
+    const card = document.querySelector(`.member-list-item[data-id="${data.visitor_id}"]`);
+    
+    if (card) {
+        if (data.action === 'allow') {
+            const statusSpan = card.querySelector('.permission-status');
+            if (statusSpan) {
+                statusSpan.className = 'permission-status status-allowed';
+                statusSpan.textContent = 'Allowed';
+            }
+            showToast(`Entry ALLOWED for ${data.visitor_name}`, 'success');
+        } else if (data.action === 'deny') {
+            const statusSpan = card.querySelector('.permission-status');
+            if (statusSpan) {
+                statusSpan.className = 'permission-status status-denied';
+                statusSpan.textContent = 'Denied';
+            }
+            showToast(`Entry DENIED for ${data.visitor_name}`, 'error');
+        }
+    }
+});
