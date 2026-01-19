@@ -10,16 +10,3 @@ gunicorn
 oauthlib
 requests
 flask-socketio
-Flask
-Flask-Cors
-Flask-Login
-flask-socketio
-Flask-SQLAlchemy
-gunicorn
-oauthlib
-Pillow
-psycopg2-binary
-python-dotenv
-qrcode
-requests
-sqlalchemy
